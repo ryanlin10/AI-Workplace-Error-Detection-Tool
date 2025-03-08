@@ -1,4 +1,5 @@
 import React, { useRef, useEffect, useState, useCallback } from 'react';
+import axios from 'axios';
 import './VideoCapture.css';
 
 const VideoCapture = ({ isActive, onImageCapture }) => {
@@ -10,6 +11,11 @@ const VideoCapture = ({ isActive, onImageCapture }) => {
   const [hasValidImage, setHasValidImage] = useState(false);
   const [cameraStatus, setCameraStatus] = useState('Initializing camera...');
   const [storedImage, setStoredImage] = useState(null);
+  const [captureMode, setCaptureMode] = useState('face'); // 'face' or 'medical'
+  const [faceRecognitionResult, setFaceRecognitionResult] = useState(null);
+  const [faceRecognitionLoading, setFaceRecognitionLoading] = useState(false);
+  const [imageAnalysisResult, setImageAnalysisResult] = useState(null);
+  const [imageAnalysisLoading, setImageAnalysisLoading] = useState(false);
   
   // Function to check if an image is blank/black
   const isImageBlank = (imageData) => {
@@ -115,23 +121,83 @@ const VideoCapture = ({ isActive, onImageCapture }) => {
       setHasValidImage(true);
       onImageCapture(imageDataUrl);
       
+      // Process the image based on the current mode
+      if (captureMode === 'face') {
+        await processFaceRecognition(imageDataUrl);
+      } else if (captureMode === 'medical') {
+        await processMedicalImageAnalysis(imageDataUrl);
+      }
+      
       return true;
     } catch (error) {
       console.error('Error capturing image:', error);
       return false;
     }
-  }, [onImageCapture, isCameraReady]);
+  }, [onImageCapture, isCameraReady, captureMode]);
+  
+  // Function to process face recognition
+  const processFaceRecognition = async (imageData) => {
+    try {
+      setFaceRecognitionLoading(true);
+      setFaceRecognitionResult(null);
+      
+      console.log('Sending image for face recognition...');
+      const response = await axios.post('http://localhost:8080/api/recognize-face', {
+        image: imageData
+      });
+      
+      console.log('Face recognition result:', response.data);
+      setFaceRecognitionResult(response.data);
+      
+      // Switch to medical image mode after face recognition is done
+      setCaptureMode('medical');
+      
+    } catch (error) {
+      console.error('Error in face recognition:', error);
+      setFaceRecognitionResult({
+        success: false,
+        error: error.response?.data?.error || 'Error processing face recognition'
+      });
+    } finally {
+      setFaceRecognitionLoading(false);
+    }
+  };
+  
+  // Function to process medical image analysis
+  const processMedicalImageAnalysis = async (imageData) => {
+    try {
+      setImageAnalysisLoading(true);
+      setImageAnalysisResult(null);
+      
+      console.log('Sending image for medical analysis...');
+      const response = await axios.post('http://localhost:8080/api/analyze-image', {
+        image: imageData
+      });
+      
+      console.log('Medical image analysis result:', response.data);
+      setImageAnalysisResult(response.data);
+      
+    } catch (error) {
+      console.error('Error in medical image analysis:', error);
+      setImageAnalysisResult({
+        success: false,
+        error: error.response?.data?.error || 'Error processing image analysis'
+      });
+    } finally {
+      setImageAnalysisLoading(false);
+    }
+  };
   
   // Manual capture button handler with status updates
   const handleManualCapture = async () => {
     if (isCameraReady) {
       console.log('Manual capture triggered');
-      setCameraStatus('Capturing image...');
+      setCameraStatus(`Capturing ${captureMode === 'face' ? 'face' : 'medical'} image...`);
       
       const success = await captureImage();
       
       if (success) {
-        setCameraStatus('Image captured successfully!');
+        setCameraStatus(`${captureMode === 'face' ? 'Face' : 'Medical'} image captured successfully!`);
       } else {
         setCameraStatus('Failed to capture image. Try again.');
       }
@@ -148,6 +214,15 @@ const VideoCapture = ({ isActive, onImageCapture }) => {
     setHasValidImage(false);
     await handleManualCapture();
   };
+  
+  // Reset capture mode when starting a new stream
+  useEffect(() => {
+    if (isActive) {
+      setCaptureMode('face');
+      setFaceRecognitionResult(null);
+      setImageAnalysisResult(null);
+    }
+  }, [isActive]);
   
   // When stream ends, ensure the parent has the latest image
   useEffect(() => {
@@ -194,7 +269,7 @@ const VideoCapture = ({ isActive, onImageCapture }) => {
                 videoRef.current.play()
                   .then(() => {
                     console.log('Video playback started');
-                    setCameraStatus('Camera active - Click "Capture Image" button when ready');
+                    setCameraStatus(`Camera active - Click "Capture ${captureMode === 'face' ? 'Face' : 'Medical Image'}" button when ready`);
                     
                     // Wait a moment to ensure video is actually rendering frames
                     setTimeout(() => {
@@ -223,7 +298,7 @@ const VideoCapture = ({ isActive, onImageCapture }) => {
           });
       } else {
         // Camera is already initialized, just update the status
-        setCameraStatus('Camera active - Click "Capture Image" button when ready');
+        setCameraStatus(`Camera active - Click "Capture ${captureMode === 'face' ? 'Face' : 'Medical Image'}" button when ready`);
       }
     } else if (!isActive) {
       // Stop camera when stream ends
@@ -250,66 +325,140 @@ const VideoCapture = ({ isActive, onImageCapture }) => {
         streamRef.current.getTracks().forEach(track => track.stop());
       }
     };
-  }, [isActive, cameraError, storedImage]); // Removed isCameraReady from dependencies
+  }, [isActive, cameraError, storedImage, captureMode]); // Added captureMode to dependencies
   
-  return (
-    <div className="video-capture">
-      <video 
-        ref={videoRef} 
-        className={isActive ? 'active' : 'inactive'} 
-        muted
-        playsInline
-        autoPlay
-      />
-      
-      {isActive && (
-        <div className="camera-controls">
-          <div className="status-indicator">
-            {cameraStatus}
-            {hasValidImage && <span className="checkmark">✓</span>}
-          </div>
-          
-          <div className="buttons">
-            <button 
-              className="capture-button"
-              onClick={handleManualCapture}
-              disabled={!isCameraReady}
-              title="Take a snapshot"
-            >
-              📷 Capture Image
-            </button>
-            
-            {hasValidImage && (
-              <button 
-                className="retry-button"
-                onClick={handleRetryCapture}
-                disabled={!isCameraReady}
-                title="Capture a new image"
-              >
-                🔄 Retry
-              </button>
+  // Render face recognition result
+  const renderFaceRecognition = () => {
+    if (faceRecognitionLoading) {
+      return <div className="analysis-loading">Identifying person...</div>;
+    }
+    
+    if (faceRecognitionResult && faceRecognitionResult.success) {
+      return (
+        <div className="face-recognition-result">
+          <h4>Person Identified:</h4>
+          <div className="person-info">
+            <div className="person-id">ID: {faceRecognitionResult.person_id}</div>
+            <div className="person-name">{faceRecognitionResult.person_name}</div>
+            <div className="person-profession">{faceRecognitionResult.person_profession}</div>
+            <div className="confidence">Confidence: {faceRecognitionResult.confidence}%</div>
+            {faceRecognitionResult.is_fallback && (
+              <div className="fallback-notice">
+                Note: Using simulated recognition (API issue)
+              </div>
             )}
           </div>
         </div>
-      )}
-      
-      {!isActive && hasValidImage && (
-        <div className="image-saved-indicator">
-          <p>Image saved and will be sent with your audio</p>
+      );
+    }
+    
+    if (faceRecognitionResult && !faceRecognitionResult.success) {
+      return (
+        <div className="face-recognition-error">
+          <p>Error identifying person: {faceRecognitionResult.error}</p>
         </div>
-      )}
-      
-      {!isActive && !hasValidImage && (
-        <div className="camera-inactive">
-          <p>No image captured. Start stream to use camera.</p>
+      );
+    }
+    
+    return null;
+  };
+  
+  // Render medical image analysis result
+  const renderImageAnalysis = () => {
+    if (imageAnalysisLoading) {
+      return <div className="analysis-loading">Analyzing image...</div>;
+    }
+    
+    if (imageAnalysisResult && imageAnalysisResult.success) {
+      return (
+        <div className="image-analysis-result">
+          <h4>Image Analysis:</h4>
+          <div className="analysis-text">{imageAnalysisResult.analysis}</div>
+          {imageAnalysisResult.is_fallback && (
+            <div className="fallback-notice">
+              Note: Using simulated analysis (API issue)
+            </div>
+          )}
         </div>
-      )}
-      
-      {cameraError && (
-        <div className="camera-error">
-          <p>{cameraStatus || 'Camera access error. Please check your permissions.'}</p>
+      );
+    }
+    
+    if (imageAnalysisResult && !imageAnalysisResult.success) {
+      return (
+        <div className="image-analysis-error">
+          <p>Error analyzing image: {imageAnalysisResult.error}</p>
         </div>
-      )}
+      );
+    }
+    
+    return null;
+  };
+  
+  return (
+    <div className="video-capture-container">
+      <div className="video-capture">
+        <video 
+          ref={videoRef} 
+          className={isActive ? 'active' : 'inactive'} 
+          muted
+          playsInline
+          autoPlay
+        />
+        
+        {isActive && (
+          <div className="camera-controls">
+            <div className="status-indicator">
+              {cameraStatus}
+              {hasValidImage && <span className="checkmark">✓</span>}
+            </div>
+            
+            <div className="buttons">
+              <button 
+                className="capture-button"
+                onClick={handleManualCapture}
+                disabled={!isCameraReady}
+                title={`Take a ${captureMode === 'face' ? 'face' : 'medical'} image`}
+              >
+                📷 Capture {captureMode === 'face' ? 'Face' : 'Medical Image'}
+              </button>
+              
+              {hasValidImage && (
+                <button 
+                  className="retry-button"
+                  onClick={handleRetryCapture}
+                  disabled={!isCameraReady}
+                  title={`Capture a new ${captureMode === 'face' ? 'face' : 'medical'} image`}
+                >
+                  🔄 Retry
+                </button>
+              )}
+            </div>
+          </div>
+        )}
+        
+        {!isActive && hasValidImage && (
+          <div className="image-saved-indicator">
+            <p>Image saved and will be sent with your audio</p>
+          </div>
+        )}
+        
+        {!isActive && !hasValidImage && (
+          <div className="camera-inactive">
+            <p>No image captured. Start stream to use camera.</p>
+          </div>
+        )}
+        
+        {cameraError && (
+          <div className="camera-error">
+            <p>{cameraStatus || 'Camera access error. Please check your permissions.'}</p>
+          </div>
+        )}
+      </div>
+      
+      <div className="image-analysis-container">
+        {renderFaceRecognition()}
+        {renderImageAnalysis()}
+      </div>
     </div>
   );
 };

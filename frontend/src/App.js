@@ -60,33 +60,30 @@ function App() {
     setDebug(prev => ({
       ...prev,
       lastTextSent: audioText,
-      lastImageSent: !!capturedImage
+      lastImageSent: false // No longer sending images to the final response endpoint
     }));
     
-    console.log('Preparing to send data to backend:', { 
+    console.log('Preparing to send text data to backend:', { 
       textLength: audioText ? audioText.length : 0,
-      hasImage: !!capturedImage,
       textSample: audioText ? audioText.substring(0, 50) + '...' : 'No text'
     });
     
     // Validate data before sending
-    if (!audioText && !capturedImage) {
-      console.warn('No data to send - both text and image are empty');
-      setError('Please provide either text or an image before submitting.');
+    if (!audioText) {
+      console.warn('No text to send');
+      setError('Please provide text before submitting.');
       setIsProcessing(false);
       return;
     }
     
     try {
-      // Prepare request data
+      // Prepare request data - only sending text now
       const requestData = {
-        text: audioText || '',  // Ensure text is never undefined
-        image: capturedImage || ''  // Ensure image is never undefined
+        text: audioText || ''  // Ensure text is never undefined
       };
       
-      console.log('Sending data to backend:', { 
+      console.log('Sending text data to backend:', { 
         textLength: requestData.text.length,
-        hasImage: !!requestData.image,
         requestSize: JSON.stringify(requestData).length
       });
 
@@ -160,7 +157,8 @@ function App() {
 
   return (
     <div className="app-container">
-      <h1>Audio & Vision Processor</h1>
+      <h1>Medical Assistant</h1>
+      <h3>Reducing Errors in Medical Practice</h3>
       
       <div className="controls">
         <button 

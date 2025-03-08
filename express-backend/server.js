@@ -514,61 +514,77 @@ app.post('/api/process', async (req, res) => {
       });
     }
     
-      // Prepare message content with direct instruction to answer rather than summarize
-      let messageContent = [
-        { type: "text", text: `Please respond directly to the following. Don't summarize, just answer as if you're having a conversation:\n\nText: ${text || 'No text provided'}` }
-      ];
-      
-      // Process image if provided
-      let imagePath = null;
-      if (image && image.startsWith('data:image')) {
-        try {
-          // Extract base64 image data
-          const matches = image.match(/^data:image\/([a-zA-Z]+);base64,(.+)$/);
-          if (matches && matches.length === 3) {
-            const imageType = matches[1];
-            const base64Data = matches[2];
-            const buffer = Buffer.from(base64Data, 'base64');
-            
-            // Save image to file
-            const filename = generateUniqueFilename(imageType);
-            imagePath = path.join(mediaDir, filename);
-            fs.writeFileSync(imagePath, buffer);
-            console.log(`Image saved to ${imagePath}`);
-            
-            // Add image to message
-            messageContent.push({
-              type: "image",
-              source: {
-                type: "base64",
-                media_type: `image/${imageType}`,
-                data: base64Data
-              }
-            });
-          }
-        } catch (error) {
-          console.error('Error processing image:', error);
+    // Prepare message content with direct instruction to answer rather than summarize
+    let messageContent = [
+      { type: "text", text: `Extract all numerical medical information from the following transcript and format it as medical log entries.
+
+Examples:
+- For "I'm giving the patient 5 mg of opioids now" → "5 mg of opioids administered to patient"
+- For "The patient's heart rate is 72 BPM and blood pressure is 120/80" → "Heart rate: 72 BPM, Blood pressure: 120/80"
+- For "We need to increase the dosage to 10 units" → "Dosage increased to 10 units"
+
+Follow these rules:
+1. Only extract information with numerical values and their medical context
+2. Format each entry as a clear, concise medical log entry
+3. Include the unit of measurement with each number
+4. Use professional, concise medical terminology
+5. Omit all non-medical numerical information
+6. Format as a numbered list if multiple entries are found
+7. If no numerical medical information is found, respond with "No medical measurements recorded"
+
+Transcript: ${text || 'No text provided'}` }
+    ];
+    
+    // Process image if provided
+    let imagePath = null;
+    if (image && image.startsWith('data:image')) {
+      try {
+        // Extract base64 image data
+        const matches = image.match(/^data:image\/([a-zA-Z]+);base64,(.+)$/);
+        if (matches && matches.length === 3) {
+          const imageType = matches[1];
+          const base64Data = matches[2];
+          const buffer = Buffer.from(base64Data, 'base64');
+          
+          // Save image to file
+          const filename = generateUniqueFilename(imageType);
+          imagePath = path.join(mediaDir, filename);
+          fs.writeFileSync(imagePath, buffer);
+          console.log(`Image saved to ${imagePath}`);
+          
+          // Add image to message
+          messageContent.push({
+            type: "image",
+            source: {
+              type: "base64",
+              media_type: `image/${imageType}`,
+              data: base64Data
+            }
+          });
         }
+      } catch (error) {
+        console.error('Error processing image:', error);
       }
-      
+    }
+    
     // Call Anthropic API
-      console.log('Calling Claude API...');
-      const response = await anthropic.messages.create({
-        model: "claude-3-haiku-20240307",
-        max_tokens: 1000,
-        temperature: 0,
-        system: "You are a helpful assistant engaging in a natural conversation. Respond directly to the user's input without summarizing or rephrasing their question.",
-        messages: [
-          {
-            role: "user",
-            content: messageContent
-          }
-        ]
-      });
-      
-      const answer = response.content[0].text;
+    console.log('Calling Claude API...');
+    const response = await anthropic.messages.create({
+      model: "claude-3-haiku-20240307",
+      max_tokens: 1000,
+      temperature: 0,
+      system: "You are a medical scribe assistant specialized in extracting and formatting numerical medical information from clinical speech. Your role is to transform conversational speech into professional medical log entries that precisely capture dosages, vital signs, measurements, and other quantitative medical data. Format each entry in a clear, concise style appropriate for a medical record, always preserving the numerical values, units, and clinical context. Focus only on medically relevant information with numerical components.",
+      messages: [
+        {
+          role: "user",
+          content: messageContent
+        }
+      ]
+    });
+    
+    const answer = response.content[0].text;
     console.log(`Received response from Claude API with length: ${answer.length}`);
-      
+    
     // Save answer to file
     const summaryFilename = generateUniqueFilename('txt');
     const summaryPath = path.join(summariesDir, summaryFilename);

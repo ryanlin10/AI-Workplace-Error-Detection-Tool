@@ -146,7 +146,25 @@ function App() {
   // Handler for transcript updates from AudioRecorder
   const handleTranscriptUpdate = (text) => {
     console.log('Transcript updated:', text ? text.substring(0, 50) + '...' : 'No text');
-    setAudioText(text);
+    
+    // If this is a reset (empty text) and we're starting a new recording, reset the audioText
+    if (text === '' && isRecording) {
+      console.log('Resetting audio text at start of recording');
+      setAudioText('');
+    } 
+    // Otherwise, if we got new text and we're recording, update the text
+    else if (text && isRecording) {
+      console.log('Updating audio text during active recording');
+      setAudioText(text);
+    } 
+    // We're not recording, but might want to keep accumulating text
+    else if (text && !isRecording) {
+      console.log('Received transcript update while not recording - will still preserve for final submission');
+      setAudioText(text);
+    }
+    else {
+      console.log('Ignoring transcript update while not recording');
+    }
   };
 
   // Handler for image capture updates

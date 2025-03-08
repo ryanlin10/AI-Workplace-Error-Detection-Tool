@@ -1,0 +1,20 @@
+Checking for reference images...
+Reference image for Patient 298jx not found. Expected file: person1.jpg
+Found reference image with different extension: person1.jpeg
+Reference image for Patient 258jx not found. Expected file: person2.jpg
+Found reference image with different extension: person2.jpeg
+Reference image for Patient 387jx not found. Expected file: person3.jpg
+Found reference image with different extension: person3.jpeg
+Reference image for Patient 412jx not found. Expected file: person4.jpg
+Total files in reference_faces directory: 3
+Available images in directory: person1.jpeg, person2.jpeg, person3.jpeg
+Found 3 reference images out of 4 expected
+Server running on port 8080
+API endpoint: http://localhost:8080/api/process
+Media files will be saved to /Users/suleimanmahmood/Documents/software engineering stuff/BuildX2/express-backend/media
+Received request
+Received text: Yes, length: 144
+Received image: No, length: 0
+Calling Claude API...
+Received response from Claude API with length: 55
+Answer saved to /Users/suleimanmahmood/Documents/software engineering stuff/BuildX2/express-backend/summaries/2025-03-08T21-16-14-505Z-kg1m1aok.txt

@@ -17,6 +17,7 @@ const AudioRecorder = ({ isRecording, onTranscriptUpdate }) => {
       console.log('Starting new recording, resetting transcript');
       setTranscript('');
       setManualInput('');
+      // Explicitly notify parent of reset
       onTranscriptUpdate('');
     } else if (!isRecording && prevRecordingStateRef.current) {
       console.log('Stopping recording, final transcript:', transcript);
@@ -33,10 +34,36 @@ const AudioRecorder = ({ isRecording, onTranscriptUpdate }) => {
     if ('webkitSpeechRecognition' in window) {
       console.log('Speech recognition is available');
       const SpeechRecognition = window.webkitSpeechRecognition;
+      
+      // Destroy previous instance if it exists
+      if (recognitionRef.current) {
+        try {
+          recognitionRef.current.stop();
+        } catch (e) {
+          console.log('Error stopping previous recognition instance:', e);
+        }
+      }
+      
+      // Create fresh instance
       recognitionRef.current = new SpeechRecognition();
       recognitionRef.current.continuous = true;
       recognitionRef.current.interimResults = true;
       recognitionRef.current.lang = 'en-US'; // Set language explicitly
+      
+      // Test if we can actually start it
+      try {
+        console.log('Testing speech recognition initialization...');
+        recognitionRef.current.start();
+        setTimeout(() => {
+          if (recognitionRef.current) {
+            recognitionRef.current.stop();
+            console.log('Speech recognition initialized successfully');
+          }
+        }, 500);
+      } catch (error) {
+        console.error('Error during speech recognition test:', error);
+        setUseFallback(true);
+      }
       
       recognitionRef.current.onstart = () => {
         console.log('Speech recognition started');
@@ -60,6 +87,8 @@ const AudioRecorder = ({ isRecording, onTranscriptUpdate }) => {
       
       recognitionRef.current.onresult = (event) => {
         console.log('Speech recognition result event received', event);
+        console.log('Number of results:', event.results.length);
+        console.log('Current transcript state:', transcript);
         let finalTranscript = '';
         
         for (let i = event.resultIndex; i < event.results.length; i++) {
@@ -72,10 +101,17 @@ const AudioRecorder = ({ isRecording, onTranscriptUpdate }) => {
         
         if (finalTranscript) {
           console.log('New transcript segment:', finalTranscript);
-          const currentTranscript = transcript + ' ' + finalTranscript;
-          console.log('Updated full transcript:', currentTranscript);
-          setTranscript(currentTranscript);
-          onTranscriptUpdate(currentTranscript);
+          // Only append if we're actively recording
+          if (isRecording) {
+            const currentTranscript = transcript + ' ' + finalTranscript;
+            console.log('Updated full transcript:', currentTranscript);
+            setTranscript(currentTranscript);
+            onTranscriptUpdate(currentTranscript);
+          } else {
+            console.log('Ignoring speech recognition result while not recording');
+          }
+        } else {
+          console.log('No final transcript in this result batch');
         }
       };
       
@@ -105,26 +141,30 @@ const AudioRecorder = ({ isRecording, onTranscriptUpdate }) => {
   useEffect(() => {
     if (isRecording && !useFallback) {
       console.log('Starting audio recording and speech recognition');
-      // Start recording
-      navigator.mediaDevices.getUserMedia({ audio: true })
-        .then(stream => {
-          mediaRecorderRef.current = new MediaRecorder(stream);
-          mediaRecorderRef.current.start();
-          
-          // Start speech recognition
-          if (recognitionRef.current && !recognitionActive) {
-            try {
-              recognitionRef.current.start();
-            } catch (error) {
-              console.error('Error starting speech recognition:', error);
+      
+      // Check microphone permissions explicitly
+      if (navigator.permissions && navigator.permissions.query) {
+        navigator.permissions.query({ name: 'microphone' })
+          .then(permissionStatus => {
+            console.log('Microphone permission status:', permissionStatus.state);
+            
+            if (permissionStatus.state === 'denied') {
+              console.error('Microphone permission denied by browser');
               setUseFallback(true);
+              return;
             }
-          }
-        })
-        .catch(error => {
-          console.error('Error accessing microphone:', error);
-          setUseFallback(true);
-        });
+            
+            startRecordingWithPermission();
+          })
+          .catch(error => {
+            console.error('Error checking permissions:', error);
+            // Try anyway since permissions API might not be supported
+            startRecordingWithPermission();
+          });
+      } else {
+        // Permissions API not supported, try directly
+        startRecordingWithPermission();
+      }
     } else if (mediaRecorderRef.current) {
       console.log('Stopping audio recording and speech recognition');
       // Stop recording
@@ -139,6 +179,32 @@ const AudioRecorder = ({ isRecording, onTranscriptUpdate }) => {
           console.error('Error stopping speech recognition:', error);
         }
       }
+    }
+    
+    // Helper function to start recording after permissions check
+    function startRecordingWithPermission() {
+      navigator.mediaDevices.getUserMedia({ audio: true })
+        .then(stream => {
+          mediaRecorderRef.current = new MediaRecorder(stream);
+          mediaRecorderRef.current.start();
+          
+          // Start speech recognition
+          if (recognitionRef.current && !recognitionActive) {
+            try {
+              recognitionRef.current.start();
+              console.log('Speech recognition started successfully');
+            } catch (error) {
+              console.error('Error starting speech recognition:', error);
+              setUseFallback(true);
+            }
+          }
+        })
+        .catch(error => {
+          console.error('Error accessing microphone:', error);
+          console.log('MediaDevices support:', !!navigator.mediaDevices);
+          console.log('getUserMedia support:', !!navigator.mediaDevices.getUserMedia);
+          setUseFallback(true);
+        });
     }
   }, [isRecording, useFallback, recognitionActive]);
   
@@ -169,6 +235,42 @@ const AudioRecorder = ({ isRecording, onTranscriptUpdate }) => {
           <span>
             {useFallback ? 'Manual input mode' : (recognitionActive ? 'Recording audio...' : 'Initializing microphone...')}
           </span>
+          
+          <div className="recognition-status">
+            <p>Status: {
+              useFallback ? 'Using manual input mode' : 
+              (recognitionActive ? 'Speech recognition active' : 'Speech recognition initializing')
+            }</p>
+            {!useFallback && !recognitionActive && (
+              <button 
+                onClick={() => {
+                  if (recognitionRef.current) {
+                    try {
+                      console.log('Manually starting speech recognition');
+                      recognitionRef.current.start();
+                    } catch (error) {
+                      console.error('Error manually starting speech recognition:', error);
+                    }
+                  }
+                }}
+              >
+                Try Start Recognition
+              </button>
+            )}
+            <button 
+              onClick={() => {
+                // Force fallback mode
+                if (recognitionRef.current) {
+                  try {
+                    recognitionRef.current.stop();
+                  } catch (e) {}
+                }
+                setUseFallback(true);
+              }}
+            >
+              Switch to Manual Input
+            </button>
+          </div>
           
           {useFallback && (
             <div className="manual-input">

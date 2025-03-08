@@ -1,0 +1,103 @@
+.audio-recorder {
+  padding: 20px;
+  border-radius: 8px;
+  background-color: #f5f5f5;
+  margin-bottom: 20px;
+}
+
+.recording-indicator {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.recording-icon {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background-color: #ff4136;
+  animation: pulse 1.5s infinite;
+  margin-right: 10px;
+}
+
+@keyframes pulse {
+  0% {
+    transform: scale(0.95);
+    box-shadow: 0 0 0 0 rgba(255, 65, 54, 0.7);
+  }
+  
+  70% {
+    transform: scale(1);
+    box-shadow: 0 0 0 10px rgba(255, 65, 54, 0);
+  }
+  
+  100% {
+    transform: scale(0.95);
+    box-shadow: 0 0 0 0 rgba(255, 65, 54, 0);
+  }
+}
+
+.recorder-inactive {
+  text-align: center;
+  color: #777;
+}
+
+.manual-input {
+  margin-top: 20px;
+  width: 100%;
+  max-width: 500px;
+}
+
+.input-group {
+  display: flex;
+  margin-top: 10px;
+}
+
+.input-group input {
+  flex: 1;
+  padding: 10px;
+  border: 1px solid #ddd;
+  border-radius: 4px 0 0 4px;
+  font-size: 16px;
+}
+
+.input-group button {
+  padding: 10px 15px;
+  background-color: #0074d9;
+  color: white;
+  border: none;
+  border-radius: 0 4px 4px 0;
+  cursor: pointer;
+  font-size: 16px;
+}
+
+.input-group button:hover {
+  background-color: #0056b3;
+}
+
+.current-transcript {
+  margin-top: 20px;
+  width: 100%;
+  max-width: 500px;
+  background-color: white;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  padding: 10px;
+  max-height: 150px;
+  overflow-y: auto;
+}
+
+.current-transcript p {
+  margin: 5px 0;
+}
+
+.recorder-inactive button {
+  margin-top: 10px;
+  padding: 8px 15px;
+  background-color: #0074d9;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 14px;
+} 

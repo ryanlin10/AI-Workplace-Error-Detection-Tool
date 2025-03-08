@@ -1,0 +1,40 @@
+Server running on port 8080
+API endpoint: http://localhost:8080/api/process
+Received request
+Received text: Yes, length: 34
+Received image: No, length: 0
+Calling Claude API...
+Received response from Claude API with length: 244
+Answer saved to /Users/suleimanmahmood/Documents/software engineering stuff/BuildX2/express-backend/summaries/2025-03-08T15-52-42-496Z-9346.txt
+Received request
+Received text: Yes, length: 69
+Received image: No, length: 0
+Calling Claude API...
+Received response from Claude API with length: 303
+Answer saved to /Users/suleimanmahmood/Documents/software engineering stuff/BuildX2/express-backend/summaries/2025-03-08T15-53-40-200Z-1055.txt
+Received request
+Received text: Yes, length: 34
+Received image: No, length: 0
+Calling Claude API...
+Received response from Claude API with length: 358
+Answer saved to /Users/suleimanmahmood/Documents/software engineering stuff/BuildX2/express-backend/summaries/2025-03-08T15-54-13-191Z-4947.txt
+Received request
+Received text: No, length: 0
+Received image: Yes, length: 225495
+Image saved to /Users/suleimanmahmood/Documents/software engineering stuff/BuildX2/express-backend/media/2025-03-08T15-59-45-149Z-8908.jpeg
+Calling Claude API...
+Received response from Claude API with length: 433
+Answer saved to /Users/suleimanmahmood/Documents/software engineering stuff/BuildX2/express-backend/summaries/2025-03-08T15-59-50-200Z-6508.txt
+Received request
+Received text: Yes, length: 63
+Received image: No, length: 0
+Calling Claude API...
+Received response from Claude API with length: 390
+Answer saved to /Users/suleimanmahmood/Documents/software engineering stuff/BuildX2/express-backend/summaries/2025-03-08T16-00-29-151Z-9057.txt
+Received request
+Received text: Yes, length: 22
+Received image: Yes, length: 212503
+Image saved to /Users/suleimanmahmood/Documents/software engineering stuff/BuildX2/express-backend/media/2025-03-08T16-06-03-866Z-8311.jpeg
+Calling Claude API...
+Received response from Claude API with length: 241
+Answer saved to /Users/suleimanmahmood/Documents/software engineering stuff/BuildX2/express-backend/summaries/2025-03-08T16-06-10-943Z-2792.txt

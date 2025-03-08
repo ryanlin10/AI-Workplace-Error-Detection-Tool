@@ -18,3 +18,125 @@ Received image: No, length: 0
 Calling Claude API...
 Received response from Claude API with length: 55
 Answer saved to /Users/suleimanmahmood/Documents/software engineering stuff/BuildX2/express-backend/summaries/2025-03-08T21-16-14-505Z-kg1m1aok.txt
+Face image saved to /Users/suleimanmahmood/Documents/software engineering stuff/BuildX2/express-backend/media/face-2025-03-08T21-41-57-503Z-pnzuthoz.jpeg
+Checking for reference images...
+Found reference image for Patient 298jx: /Users/suleimanmahmood/Documents/software engineering stuff/BuildX2/express-backend/reference_faces/person1.jpeg
+Found reference image for Patient 258jx: /Users/suleimanmahmood/Documents/software engineering stuff/BuildX2/express-backend/reference_faces/person2.jpeg
+Found reference image for Patient 387jx: /Users/suleimanmahmood/Documents/software engineering stuff/BuildX2/express-backend/reference_faces/person3.jpeg
+Reference image for Patient 412jx not found. Expected file: person4.jpg
+Total files in reference_faces directory: 3
+Available images in directory: person1.jpeg, person2.jpeg, person3.jpeg
+Found 3 reference images out of 4 expected
+Found reference images. Using Claude for facial recognition with comparison
+Loaded reference image for Patient 298jx, size: 219625 bytes
+Loaded reference image for Patient 258jx, size: 267710 bytes
+Loaded reference image for Patient 387jx, size: 98827 bytes
+Loaded 3 reference images for comparison
+Sending request to Claude with 3 reference images
+Claude response: "1"
+Face image saved to /Users/suleimanmahmood/Documents/software engineering stuff/BuildX2/express-backend/media/face-2025-03-08T21-42-07-615Z-lweqn54j.jpeg
+Checking for reference images...
+Found reference image for Patient 298jx: /Users/suleimanmahmood/Documents/software engineering stuff/BuildX2/express-backend/reference_faces/person1.jpeg
+Found reference image for Patient 258jx: /Users/suleimanmahmood/Documents/software engineering stuff/BuildX2/express-backend/reference_faces/person2.jpeg
+Found reference image for Patient 387jx: /Users/suleimanmahmood/Documents/software engineering stuff/BuildX2/express-backend/reference_faces/person3.jpeg
+Reference image for Patient 412jx not found. Expected file: person4.jpg
+Total files in reference_faces directory: 3
+Available images in directory: person1.jpeg, person2.jpeg, person3.jpeg
+Found 3 reference images out of 4 expected
+Found reference images. Using Claude for facial recognition with comparison
+Loaded reference image for Patient 298jx, size: 219625 bytes
+Loaded reference image for Patient 258jx, size: 267710 bytes
+Loaded reference image for Patient 387jx, size: 98827 bytes
+Loaded 3 reference images for comparison
+Sending request to Claude with 3 reference images
+Claude response: "1"
+Received request
+Received text: Yes, length: 31
+Received image: No, length: 0
+Calling Claude API...
+Received response from Claude API with length: 33
+Answer saved to /Users/suleimanmahmood/Documents/software engineering stuff/BuildX2/express-backend/summaries/2025-03-08T21-44-46-254Z-mh88rp38.txt
+Received request
+Received text: Yes, length: 72
+Received image: No, length: 0
+Calling Claude API...
+Received response from Claude API with length: 43
+Answer saved to /Users/suleimanmahmood/Documents/software engineering stuff/BuildX2/express-backend/summaries/2025-03-08T21-44-56-481Z-mdmn3z8i.txt
+Face image saved to /Users/suleimanmahmood/Documents/software engineering stuff/BuildX2/express-backend/media/face-2025-03-08T21-54-01-348Z-dcucxor4.jpeg
+Checking for reference images...
+Found reference image for Patient 298jx: /Users/suleimanmahmood/Documents/software engineering stuff/BuildX2/express-backend/reference_faces/person1.jpeg
+Found reference image for Patient 258jx: /Users/suleimanmahmood/Documents/software engineering stuff/BuildX2/express-backend/reference_faces/person2.jpeg
+Found reference image for Patient 387jx: /Users/suleimanmahmood/Documents/software engineering stuff/BuildX2/express-backend/reference_faces/person3.jpeg
+Reference image for Patient 412jx not found. Expected file: person4.jpg
+Total files in reference_faces directory: 3
+Available images in directory: person1.jpeg, person2.jpeg, person3.jpeg
+Found 3 reference images out of 4 expected
+Found reference images. Using Claude for facial recognition with comparison
+Loaded reference image for Patient 298jx, size: 219625 bytes
+Loaded reference image for Patient 258jx, size: 267710 bytes
+Loaded reference image for Patient 387jx, size: 98827 bytes
+Loaded 3 reference images for comparison
+Sending request to Claude with 3 reference images
+Claude response: "1"
+Analysis image saved to /Users/suleimanmahmood/Documents/software engineering stuff/BuildX2/express-backend/media/analysis-2025-03-08T21-54-10-709Z-6r1m0b4g.jpeg
+Received request
+Received text: Yes, length: 97
+Received image: No, length: 0
+Calling Claude API...
+Received response from Claude API with length: 46
+Answer saved to /Users/suleimanmahmood/Documents/software engineering stuff/BuildX2/express-backend/summaries/2025-03-08T21-54-40-112Z-9yedf362.txt
+Face image saved to /Users/suleimanmahmood/Documents/software engineering stuff/BuildX2/express-backend/media/face-2025-03-08T22-24-00-996Z-umrxamrm.jpeg
+Checking for reference images...
+Found reference image for Patient 298jx: /Users/suleimanmahmood/Documents/software engineering stuff/BuildX2/express-backend/reference_faces/person1.jpeg
+Found reference image for Patient 258jx: /Users/suleimanmahmood/Documents/software engineering stuff/BuildX2/express-backend/reference_faces/person2.jpeg
+Found reference image for Patient 387jx: /Users/suleimanmahmood/Documents/software engineering stuff/BuildX2/express-backend/reference_faces/person3.jpeg
+Reference image for Patient 412jx not found. Expected file: person4.jpg
+Total files in reference_faces directory: 3
+Available images in directory: person1.jpeg, person2.jpeg, person3.jpeg
+Found 3 reference images out of 4 expected
+Found reference images. Using Claude for facial recognition with comparison
+Loaded reference image for Patient 298jx, size: 219625 bytes
+Loaded reference image for Patient 258jx, size: 267710 bytes
+Loaded reference image for Patient 387jx, size: 98827 bytes
+Loaded 3 reference images for comparison
+Sending request to Claude with 3 reference images
+Claude response: "1"
+Analysis image saved to /Users/suleimanmahmood/Documents/software engineering stuff/BuildX2/express-backend/media/analysis-2025-03-08T22-24-35-389Z-78k1at50.jpeg
+Received request
+Received text: Yes, length: 108
+Received image: No, length: 0
+Calling Claude API...
+Received response from Claude API with length: 44
+Answer saved to /Users/suleimanmahmood/Documents/software engineering stuff/BuildX2/express-backend/summaries/2025-03-08T22-24-46-351Z-t4gh064x.txt
+Face image saved to /Users/suleimanmahmood/Documents/software engineering stuff/BuildX2/express-backend/media/face-2025-03-08T22-30-58-533Z-3vl2m7sf.jpeg
+Checking for reference images...
+Found reference image for Patient 298jx: /Users/suleimanmahmood/Documents/software engineering stuff/BuildX2/express-backend/reference_faces/person1.jpeg
+Found reference image for Patient 258jx: /Users/suleimanmahmood/Documents/software engineering stuff/BuildX2/express-backend/reference_faces/person2.jpeg
+Found reference image for Patient 387jx: /Users/suleimanmahmood/Documents/software engineering stuff/BuildX2/express-backend/reference_faces/person3.jpeg
+Reference image for Patient 412jx not found. Expected file: person4.jpg
+Total files in reference_faces directory: 3
+Available images in directory: person1.jpeg, person2.jpeg, person3.jpeg
+Found 3 reference images out of 4 expected
+Found reference images. Using Claude for facial recognition with comparison
+Loaded reference image for Patient 298jx, size: 219625 bytes
+Loaded reference image for Patient 258jx, size: 267710 bytes
+Loaded reference image for Patient 387jx, size: 98827 bytes
+Loaded 3 reference images for comparison
+Sending request to Claude with 3 reference images
+Claude response: "1"
+Face image saved to /Users/suleimanmahmood/Documents/software engineering stuff/BuildX2/express-backend/media/face-2025-03-08T22-31-32-679Z-bflmhd05.jpeg
+Checking for reference images...
+Found reference image for Patient 298jx: /Users/suleimanmahmood/Documents/software engineering stuff/BuildX2/express-backend/reference_faces/person1.jpeg
+Found reference image for Patient 258jx: /Users/suleimanmahmood/Documents/software engineering stuff/BuildX2/express-backend/reference_faces/person2.jpeg
+Found reference image for Patient 387jx: /Users/suleimanmahmood/Documents/software engineering stuff/BuildX2/express-backend/reference_faces/person3.jpeg
+Reference image for Patient 412jx not found. Expected file: person4.jpg
+Total files in reference_faces directory: 3
+Available images in directory: person1.jpeg, person2.jpeg, person3.jpeg
+Found 3 reference images out of 4 expected
+Found reference images. Using Claude for facial recognition with comparison
+Loaded reference image for Patient 298jx, size: 219625 bytes
+Loaded reference image for Patient 258jx, size: 267710 bytes
+Loaded reference image for Patient 387jx, size: 98827 bytes
+Loaded 3 reference images for comparison
+Sending request to Claude with 3 reference images
+Claude response: "1"

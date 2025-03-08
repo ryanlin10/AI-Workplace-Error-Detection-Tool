@@ -212,24 +212,24 @@ const VideoCapture = ({ isActive, onImageCapture }) => {
     }
   };
   
-  // Medical image capture button handler
+  // Medical capture button handler
   const handleMedicalCapture = async () => {
     if (isCameraReady) {
-      console.log('Manual medical image capture triggered');
-      setCameraStatus('Capturing medical image...');
+      console.log('Manual medical/scale capture triggered');
+      setCameraStatus('Capturing scale measurement...');
       
       const success = await captureImage('medical');
       
       if (success) {
-        setCameraStatus('Medical image captured successfully!');
+        setCameraStatus('Scale measurement captured successfully!');
       } else {
-        setCameraStatus('Failed to capture medical image. Try again.');
+        setCameraStatus('Failed to capture scale image. Try again.');
       }
       
       // Reset status after a delay
       setTimeout(() => {
         setCameraStatus(isCameraReady ? 'Camera active' : 'Initializing camera...');
-      }, 2000);
+      }, 3000);
     }
   };
   
@@ -391,8 +391,30 @@ const VideoCapture = ({ isActive, onImageCapture }) => {
     if (imageAnalysisResult && imageAnalysisResult.success) {
       return (
         <div className="image-analysis-result">
-          <h4>Image Analysis:</h4>
+          <h4>Scale Measurement Analysis:</h4>
           <div className="analysis-text">{imageAnalysisResult.analysis}</div>
+          
+          {imageAnalysisResult.weight && (
+            <div className="weight-measurement">
+              <h5>Detected Weight:</h5>
+              <div className={`weight-value ${imageAnalysisResult.hasOvershot ? 'overshot' : 'acceptable'}`}>
+                {imageAnalysisResult.weight} {imageAnalysisResult.unit}
+                {imageAnalysisResult.hasOvershot ? 
+                  <span className="overshot-warning"> ⚠️ EXCEEDS TARGET!</span> : 
+                  <span className="target-ok"> ✓ Within target</span>
+                }
+              </div>
+              <div className="target-info">
+                Target: {imageAnalysisResult.targetWeight}g
+              </div>
+              {imageAnalysisResult.hasOvershot && (
+                <div className="recommendation">
+                  Recommendation: Reduce the amount to match the target weight of {imageAnalysisResult.targetWeight}g.
+                </div>
+              )}
+            </div>
+          )}
+          
           {imageAnalysisResult.is_fallback && (
             <div className="fallback-notice">
               Note: Using simulated analysis (API issue)
@@ -415,68 +437,138 @@ const VideoCapture = ({ isActive, onImageCapture }) => {
   
   // Render patient medical history
   const renderPatientMedicalHistory = () => {
-    if (!patientData) return null;
+    // Only show patient data if we have a face recognition result and patient data
+    if (!faceRecognitionResult || !faceRecognitionResult.success || !patientData) {
+      return null;
+    }
     
     return (
       <div className="patient-medical-history">
         <h3>Patient Medical History</h3>
+        
         <div className="patient-header">
           <div className="patient-name-id">
             <h4>{patientData.full_name}</h4>
-            <div className="patient-id-tag">ID: {patientData.patient_id}</div>
+            <span className="patient-id-tag">ID: {patientData.patient_id}</span>
           </div>
           <div className="patient-demographics">
-            <span>Age: {patientData.age}</span>
-            <span>Gender: {patientData.gender}</span>
+            <span>{patientData.age} years, {patientData.gender}</span>
             <span>Blood Type: {patientData.blood_type}</span>
           </div>
         </div>
         
+        {patientData.current_complaint && (
+          <div className="medical-data-section current-complaint">
+            <h5>Current Complaint</h5>
+            <div className="complaint-details">
+              <div className="complaint-description">
+                <p><strong>{patientData.current_complaint.description}</strong></p>
+                <div className="complaint-metadata">
+                  <span>Duration: {patientData.current_complaint.duration}</span>
+                  <span>Severity: {patientData.current_complaint.severity}</span>
+                </div>
+              </div>
+              {patientData.current_complaint.associated_symptoms && (
+                <div className="associated-symptoms">
+                  <h6>Associated Symptoms:</h6>
+                  <ul>
+                    {patientData.current_complaint.associated_symptoms.map((symptom, index) => (
+                      <li key={index}>{symptom}</li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+        
         <div className="medical-data-grid">
-          <div className="medical-data-column">
-            <div className="medical-data-section">
-              <h5>Allergies</h5>
-              <ul>
-                {patientData.allergies.map((allergy, index) => (
-                  <li key={`allergy-${index}`}>{allergy}</li>
-                ))}
-              </ul>
-            </div>
-            
-            <div className="medical-data-section">
-              <h5>Medical Conditions</h5>
-              <ul>
-                {patientData.medical_conditions.map((condition, index) => (
-                  <li key={`condition-${index}`}>{condition}</li>
-                ))}
-              </ul>
-            </div>
+          <div className="medical-data-section">
+            <h5>Medical Conditions</h5>
+            <ul>
+              {patientData.medical_conditions.map((condition, index) => (
+                <li key={`condition-${index}`}>{condition}</li>
+              ))}
+            </ul>
           </div>
           
-          <div className="medical-data-column">
-            <div className="medical-data-section">
-              <h5>Current Medications</h5>
-              <ul>
-                {patientData.current_medications.map((med, index) => (
-                  <li key={`med-${index}`}>{med.name} {med.dosage} ({med.frequency})</li>
-                ))}
-              </ul>
-            </div>
-            
-            <div className="medical-data-section">
-              <h5>Recent Visits</h5>
-              <ul className="visits-list">
-                {patientData.recent_visits.map((visit, index) => (
-                  <li key={`visit-${index}`}>
-                    <span className="visit-date">{visit.date}</span>
-                    <span className="visit-reason">{visit.reason}</span>
-                    <span className="visit-doctor">{visit.doctor}</span>
-                  </li>
-                ))}
-              </ul>
-            </div>
+          <div className="medical-data-section">
+            <h5>Current Medications</h5>
+            <ul>
+              {patientData.current_medications.map((med, index) => (
+                <li key={`med-${index}`}>
+                  {med.name} {med.dosage}, {med.frequency}
+                </li>
+              ))}
+            </ul>
+          </div>
+          
+          <div className="medical-data-section">
+            <h5>Allergies</h5>
+            <ul>
+              {patientData.allergies.map((allergy, index) => (
+                <li key={`allergy-${index}`}>{allergy}</li>
+              ))}
+            </ul>
+          </div>
+          
+          <div className="medical-data-section">
+            <h5>Recent Visits</h5>
+            <ul className="visits-list">
+              {patientData.recent_visits.map((visit, index) => (
+                <li key={`visit-${index}`}>
+                  <span className="visit-date">{visit.date}</span>
+                  <span className="visit-reason">{visit.reason}</span>
+                  <span className="visit-doctor">{visit.doctor}</span>
+                </li>
+              ))}
+            </ul>
           </div>
         </div>
+        
+        {patientData.differential_diagnoses && (
+          <div className="medical-data-section differential-diagnoses">
+            <h5>Differential Diagnoses</h5>
+            <div className="diagnosis-alert">
+              <span className="alert-icon">⚠️</span>
+              <span>Clinical Decision Support: Consider these possibilities based on patient presentation</span>
+            </div>
+            <table>
+              <thead>
+                <tr>
+                  <th>Condition</th>
+                  <th>Probability</th>
+                  <th>Specialty</th>
+                  <th>Notes</th>
+                </tr>
+              </thead>
+              <tbody>
+                {patientData.differential_diagnoses.map((diagnosis, index) => (
+                  <tr key={`diagnosis-${index}`} className={`probability-${diagnosis.probability.toLowerCase()}`}>
+                    <td><strong>{diagnosis.condition}</strong></td>
+                    <td className="probability">{diagnosis.probability}</td>
+                    <td>{diagnosis.specialization}</td>
+                    <td>{diagnosis.notes}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+        
+        {patientData.interdisciplinary_considerations && (
+          <div className="medical-data-section interdisciplinary">
+            <h5>Interdisciplinary Considerations</h5>
+            <div className="considerations-intro">
+              Recommendations that might be outside primary specialty scope:
+            </div>
+            <ul className="considerations-list">
+              {patientData.interdisciplinary_considerations.map((consideration, index) => (
+                <li key={`consideration-${index}`}>{consideration}</li>
+              ))}
+            </ul>
+          </div>
+        )}
         
         <div className="medical-data-section lab-results">
           <h5>Lab Results</h5>
@@ -563,7 +655,7 @@ const VideoCapture = ({ isActive, onImageCapture }) => {
             onClick={handleMedicalCapture}
             disabled={!isCameraReady || imageAnalysisLoading}
           >
-            🩺 Capture Medical Image
+            🩺 Capture Scale Weight
           </button>
         </div>
       )}

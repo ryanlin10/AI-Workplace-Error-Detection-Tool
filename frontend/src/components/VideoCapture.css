@@ -3,6 +3,10 @@
   flex-direction: column;
   gap: 20px;
   width: 100%;
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 20px;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
 }
 
 .video-capture {
@@ -52,18 +56,19 @@
   padding: 20px;
   background-color: rgba(0, 0, 0, 0.7);
   border-radius: 8px;
+  font-weight: 500;
 }
 
 .camera-error {
-  color: #ff4136;
+  color: #ff6b6b;
   background-color: rgba(0, 0, 0, 0.8);
-  border: 1px solid #ff4136;
+  border: 1px solid #ff6b6b;
 }
 
 .image-saved-indicator {
-  color: #2ecc40;
+  color: #4dff4d;
   background-color: rgba(0, 0, 0, 0.8);
-  border: 1px solid #2ecc40;
+  border: 1px solid #4dff4d;
 }
 
 .camera-controls {
@@ -85,7 +90,8 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  font-weight: 500;
+  font-weight: 600;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);
 }
 
 .checkmark {
@@ -496,4 +502,219 @@
   padding: 10px;
   border-radius: 4px;
   margin: 0;
+}
+
+/* Current Complaint Styles */
+.current-complaint {
+  background-color: #f9f9f9;
+  border-left: 4px solid #ff9800;
+  padding: 15px;
+  margin-bottom: 20px;
+  border-radius: 4px;
+}
+
+.complaint-details {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.complaint-description {
+  margin-bottom: 8px;
+}
+
+.complaint-description p {
+  font-size: 16px;
+  margin: 0 0 10px 0;
+}
+
+.complaint-metadata {
+  display: flex;
+  gap: 20px;
+  color: #666;
+  font-size: 14px;
+}
+
+.associated-symptoms h6 {
+  margin: 0 0 5px 0;
+  font-size: 14px;
+  color: #555;
+}
+
+.associated-symptoms ul {
+  margin: 0;
+  padding-left: 20px;
+}
+
+.associated-symptoms li {
+  margin-bottom: 3px;
+}
+
+/* Differential Diagnoses Styles */
+.differential-diagnoses {
+  margin-top: 25px;
+  margin-bottom: 30px;
+}
+
+.diagnosis-alert {
+  background-color: #fff8e1;
+  border-radius: 4px;
+  padding: 10px 15px;
+  margin-bottom: 15px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 14px;
+  color: #795548;
+  border-left: 4px solid #ffb300;
+}
+
+.alert-icon {
+  font-size: 18px;
+}
+
+.differential-diagnoses table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 10px;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+}
+
+.differential-diagnoses th {
+  background-color: #f5f5f5;
+  color: #333;
+  font-weight: 600;
+  text-align: left;
+  padding: 12px 15px;
+}
+
+.differential-diagnoses td {
+  padding: 12px 15px;
+  border-bottom: 1px solid #eee;
+}
+
+.differential-diagnoses tr:last-child td {
+  border-bottom: none;
+}
+
+.probability-high {
+  background-color: #ffeaea;
+}
+
+.probability-medium {
+  background-color: #fff8e1;
+}
+
+.probability-low {
+  background-color: #f1f8e9;
+}
+
+td.probability {
+  font-weight: 600;
+}
+
+.probability-high .probability {
+  color: #d32f2f;
+}
+
+.probability-medium .probability {
+  color: #ff8f00;
+}
+
+.probability-low .probability {
+  color: #558b2f;
+}
+
+/* Interdisciplinary Considerations Styles */
+.interdisciplinary {
+  background-color: #efebe9;
+  border-radius: 4px;
+  padding: 15px;
+  margin-bottom: 20px;
+}
+
+.considerations-intro {
+  font-size: 14px;
+  color: #5d4037;
+  margin-bottom: 10px;
+  font-style: italic;
+}
+
+.considerations-list {
+  margin: 0;
+  padding-left: 20px;
+}
+
+.considerations-list li {
+  margin-bottom: 6px;
+  padding: 2px 0;
+  color: #1a1a1a;
+}
+
+/* Weight Measurement Styles */
+.weight-measurement {
+  background-color: #f5f5f5;
+  border-radius: 8px;
+  padding: 12px;
+  margin-top: 15px;
+  margin-bottom: 15px;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.weight-measurement h5 {
+  margin-top: 0;
+  color: #333;
+  font-size: 16px;
+}
+
+.weight-value {
+  font-size: 24px;
+  font-weight: bold;
+  margin: 10px 0;
+  padding: 5px 10px;
+  border-radius: 5px;
+  display: inline-block;
+}
+
+.weight-value.overshot {
+  background-color: #ffecec;
+  color: #d32f2f;
+  border-left: 4px solid #d32f2f;
+}
+
+.weight-value.acceptable {
+  background-color: #eaffee;
+  color: #2e7d32;
+  border-left: 4px solid #2e7d32;
+}
+
+.overshot-warning {
+  color: #d32f2f;
+  font-weight: bold;
+  animation: warning-pulse 1.5s infinite;
+}
+
+.target-ok {
+  color: #2e7d32;
+}
+
+.target-info {
+  font-size: 14px;
+  color: #666;
+  margin-bottom: 8px;
+}
+
+.recommendation {
+  background-color: #fff9e5;
+  border-left: 4px solid #ffc107;
+  padding: 8px 12px;
+  font-size: 14px;
+  margin-top: 10px;
+  color: #795548;
+}
+
+@keyframes warning-pulse {
+  0% { opacity: 1; }
+  50% { opacity: 0.7; }
+  100% { opacity: 1; }
 } 

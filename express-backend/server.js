@@ -431,11 +431,14 @@ app.post('/api/analyze-image', async (req, res) => {
     }
     
     try {
-      // Try to use Claude for image analysis
+      // Define target weight for comparison (200g)
+      const targetWeight = 200;
+      
+      // Using Claude for scale weight measurement analysis
       const messageContent = [
         { 
           type: "text", 
-          text: "Analyze this medical image and describe what you see in about 3-5 sentences. Focus on key medical observations." 
+          text: "This is an image of a medical scale. Look at the displayed weight measurement. What is the exact weight shown on the scale? Just provide the numeric value and unit (e.g., '150g' or '300mg'). Then determine if this measurement has overshot the target value of 200g." 
         },
         {
           type: "image",
@@ -451,7 +454,7 @@ app.post('/api/analyze-image', async (req, res) => {
         model: "claude-3-haiku-20240307",
         max_tokens: 300,
         temperature: 0.1,
-        system: "You are a medical image analysis system. Analyze the image and provide a clear, concise description of what you see that would be relevant in a medical context.",
+        system: "You are a medical measurement analysis system. Your job is to analyze images of scales, extract the exact weight measurement shown, and determine if it has overshot a target value. Be precise in your reading of numeric values.",
         messages: [
           {
             role: "user",
@@ -460,36 +463,58 @@ app.post('/api/analyze-image', async (req, res) => {
         ]
       });
       
+      const analysisText = analysisResponse.content[0].text.trim();
+      
+      // Try to extract the weight value from the response
+      let weight = null;
+      let unit = null;
+      let hasOvershot = false;
+      
+      // Extract numbers and common weight units (g, mg, kg)
+      const weightMatch = analysisText.match(/(\d+(?:\.\d+)?)\s*(g|mg|kg)/i);
+      if (weightMatch) {
+        weight = parseFloat(weightMatch[1]);
+        unit = weightMatch[2].toLowerCase();
+        
+        // Convert to grams for comparison
+        let weightInGrams = weight;
+        if (unit === 'mg') {
+          weightInGrams = weight / 1000;
+        } else if (unit === 'kg') {
+          weightInGrams = weight * 1000;
+        }
+        
+        // Determine if it has overshot the target
+        hasOvershot = weightInGrams > targetWeight;
+      }
+      
       return res.json({
         success: true,
-        analysis: analysisResponse.content[0].text.trim(),
-        analysis_file: imagePath ? path.basename(imagePath) : null
+        analysis: analysisText,
+        analysis_file: imagePath ? path.basename(imagePath) : null,
+        weight: weight,
+        unit: unit,
+        targetWeight: targetWeight,
+        hasOvershot: hasOvershot,
+        weightInGrams: weight !== null ? (unit === 'mg' ? weight / 1000 : (unit === 'kg' ? weight * 1000 : weight)) : null
       });
     } catch (apiError) {
-      console.error('Error in Claude API call for image analysis:', apiError);
+      console.error('Error in Claude API call for weight analysis:', apiError);
       
       // Fallback: provide a generic analysis
-      const fallbackAnalyses = [
-        "The image appears to show medical content. Without being able to process the details due to a temporary system limitation, I recommend consulting with a healthcare professional for proper analysis.",
-        "This appears to be a medical image. Due to current API limitations, I'm unable to provide a detailed analysis. Please consult with a medical professional for proper interpretation.",
-        "The medical image has been captured successfully. While I'm currently unable to analyze the specific details due to an API limitation, the image quality is good for medical professional review.",
-        "This image contains medical information that would typically be analyzed by a healthcare provider. Due to a temporary system constraint, detailed AI analysis isn't available at this moment."
-      ];
-      
-      // Return a fallback response
       return res.json({
         success: true,
-        analysis: fallbackAnalyses[Math.floor(Math.random() * fallbackAnalyses.length)],
+        analysis: "The image appears to show a scale measurement. Due to current system limitations, I'm unable to precisely read the value. Please verify the measurement manually to determine if it exceeds the target of 200g.",
         analysis_file: imagePath ? path.basename(imagePath) : null,
         is_fallback: true,
-        fallback_reason: "API authentication error - using simulated result"
+        fallback_reason: "API error - using simulated result"
       });
     }
   } catch (error) {
-    console.error('Error in image analysis:', error);
+    console.error('Error in weight measurement analysis:', error);
     return res.status(500).json({
       success: false,
-      error: 'Error processing image analysis request'
+      error: 'Error processing weight analysis request'
     });
   }
 });

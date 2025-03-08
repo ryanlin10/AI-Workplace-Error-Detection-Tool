@@ -293,4 +293,207 @@
   border: 2px solid #0074D9;
   border-radius: 4px;
   box-shadow: 0 0 10px rgba(0, 116, 217, 0.5);
+}
+
+/* New capture buttons */
+.capture-buttons {
+  display: flex;
+  justify-content: space-between;
+  gap: 15px;
+  margin: 15px 0;
+  width: 100%;
+}
+
+.face-capture-button,
+.medical-capture-button {
+  flex: 1;
+  padding: 12px 15px;
+  font-size: 16px;
+  font-weight: bold;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+}
+
+.face-capture-button {
+  background: linear-gradient(135deg, #0074D9, #0056a4);
+  color: white;
+}
+
+.medical-capture-button {
+  background: linear-gradient(135deg, #2ECC40, #209a30);
+  color: white;
+}
+
+.face-capture-button:hover {
+  background: linear-gradient(135deg, #0056a4, #003c7a);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+}
+
+.medical-capture-button:hover {
+  background: linear-gradient(135deg, #209a30, #116b1e);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+}
+
+.face-capture-button:disabled,
+.medical-capture-button:disabled {
+  background: linear-gradient(135deg, #ccc, #999);
+  color: #666;
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
+}
+
+/* Patient medical history styles */
+.patient-medical-history {
+  background: rgba(10, 30, 50, 0.7);
+  border-radius: 8px;
+  padding: 20px;
+  margin-top: 20px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+  border: 1px solid rgba(0, 150, 255, 0.3);
+  color: white;
+  animation: fadeIn 0.5s ease-out;
+}
+
+.patient-medical-history h3 {
+  color: #7FDBFF;
+  margin-top: 0;
+  border-bottom: 1px solid rgba(127, 219, 255, 0.3);
+  padding-bottom: 10px;
+  margin-bottom: 15px;
+}
+
+.patient-header {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 20px;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.patient-name-id {
+  display: flex;
+  flex-direction: column;
+}
+
+.patient-name-id h4 {
+  margin: 0 0 5px 0;
+  font-size: 1.2rem;
+  color: white;
+}
+
+.patient-id-tag {
+  background-color: rgba(255, 183, 77, 0.2);
+  color: #FFB74D;
+  padding: 2px 8px;
+  border-radius: 4px;
+  font-size: 0.85rem;
+  font-weight: bold;
+  display: inline-block;
+}
+
+.patient-demographics {
+  display: flex;
+  gap: 15px;
+  flex-wrap: wrap;
+  color: #CCC;
+}
+
+.medical-data-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 20px;
+  margin-bottom: 20px;
+}
+
+@media (max-width: 768px) {
+  .medical-data-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.medical-data-section {
+  margin-bottom: 20px;
+}
+
+.medical-data-section h5 {
+  color: #4ECDC4;
+  margin: 0 0 10px 0;
+  font-size: 1rem;
+  border-bottom: 1px solid rgba(78, 205, 196, 0.3);
+  padding-bottom: 5px;
+}
+
+.medical-data-section ul {
+  margin: 0;
+  padding: 0 0 0 20px;
+  list-style-type: square;
+}
+
+.medical-data-section li {
+  margin-bottom: 5px;
+  line-height: 1.4;
+}
+
+.medical-data-section.lab-results {
+  grid-column: 1 / -1;
+}
+
+.medical-data-section table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 10px;
+}
+
+.medical-data-section table th,
+.medical-data-section table td {
+  text-align: left;
+  padding: 6px 10px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.medical-data-section table th {
+  background-color: rgba(0, 0, 0, 0.2);
+  color: #7FDBFF;
+  font-weight: 500;
+}
+
+.medical-data-section table tr:hover td {
+  background-color: rgba(0, 0, 0, 0.2);
+}
+
+.visits-list li {
+  display: grid;
+  grid-template-columns: 100px 1fr auto;
+  gap: 10px;
+  margin-bottom: 8px;
+}
+
+.visit-date {
+  color: #BBB;
+  font-size: 0.9em;
+}
+
+.visit-doctor {
+  color: #7FDBFF;
+  font-style: italic;
+}
+
+.clinical-notes {
+  line-height: 1.6;
+  font-style: italic;
+  color: #DDD;
+  background-color: rgba(0, 0, 0, 0.2);
+  padding: 10px;
+  border-radius: 4px;
+  margin: 0;
 } 

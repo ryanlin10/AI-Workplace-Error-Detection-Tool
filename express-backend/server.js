@@ -6,6 +6,7 @@ const fs = require('fs');
 const path = require('path');
 const multer = require('multer');
 const { Anthropic } = require('@anthropic-ai/sdk');
+const patientDatabase = require('./patient_database');
 
 // Initialize Express app
 const app = express();
@@ -48,25 +49,25 @@ const generateUniqueFilename = (ext) => {
 const peopleDatabase = [
   { 
     id: 1, 
-    name: "Person 1", 
+    name: "Patient 298jx", 
     profession: "Doctor",
     referenceImageFile: "person1.jpg" // Will be stored in reference_faces directory
   },
   { 
     id: 2, 
-    name: "Person 2", 
-    profession: "Nurse",
+    name: "Patient 258jx", 
+    profession: "Patient",
     referenceImageFile: "person2.jpg"
   },
   { 
     id: 3, 
-    name: "Person 3", 
+    name: "Patient 387jx", 
     profession: "Medical Technician",
     referenceImageFile: "person3.jpg"
   },
   { 
     id: 4, 
-    name: "Person 4", 
+    name: "Patient 412jx", 
     profession: "Administrator",
     referenceImageFile: "person4.jpg"
   }
@@ -233,13 +234,17 @@ app.post('/api/recognize-face', async (req, res) => {
         // Get the person details from our database
         const person = peopleDatabase.find(p => p.id === personId) || peopleDatabase[0];
         
+        // Get patient medical history
+        const patientMedicalHistory = patientDatabase[personId.toString()] || null;
+        
         return res.json({
           success: true,
           person_id: personId,
           person_name: person.name,
           person_profession: person.profession,
           confidence: Math.floor(70 + Math.random() * 30), // Simulate confidence 70-100%
-          reference_comparison: false
+          reference_comparison: false,
+          patient_data: patientMedicalHistory
         });
       } else {
         console.log('Found reference images. Using Claude for facial recognition with comparison');
@@ -347,6 +352,9 @@ Respond with ONLY the ID number (1-${referenceImages.length}) of the matching pe
         // Get the person details from our database
         const person = peopleDatabase.find(p => p.id === personId) || peopleDatabase[0];
         
+        // Get patient medical history
+        const patientMedicalHistory = patientDatabase[personId.toString()] || null;
+        
         return res.json({
           success: true,
           person_id: personId,
@@ -354,7 +362,8 @@ Respond with ONLY the ID number (1-${referenceImages.length}) of the matching pe
           person_profession: person.profession,
           confidence: Math.floor(80 + Math.random() * 20), // Higher confidence: 80-100%
           reference_comparison: true,
-          reference_image_url: `/reference_faces/${person.referenceImageFile}`
+          reference_image_url: `/reference_faces/${person.referenceImageFile}`,
+          patient_data: patientMedicalHistory
         });
       }
     } catch (apiError) {
@@ -364,6 +373,9 @@ Respond with ONLY the ID number (1-${referenceImages.length}) of the matching pe
       const randomPersonId = Math.floor(Math.random() * 4) + 1;
       const person = peopleDatabase.find(p => p.id === randomPersonId) || peopleDatabase[0];
       
+      // Get patient medical history even for the fallback
+      const patientMedicalHistory = patientDatabase[randomPersonId.toString()] || null;
+      
       // Return simulated result with lower confidence
       return res.json({
         success: true,
@@ -372,7 +384,8 @@ Respond with ONLY the ID number (1-${referenceImages.length}) of the matching pe
         person_profession: person.profession,
         confidence: Math.floor(50 + Math.random() * 30), // Lower confidence: 50-80%
         is_fallback: true,
-        fallback_reason: "API error - using simulated result"
+        fallback_reason: "API error - using simulated result",
+        patient_data: patientMedicalHistory
       });
     }
   } catch (error) {

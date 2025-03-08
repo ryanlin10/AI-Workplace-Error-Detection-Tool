@@ -16,6 +16,7 @@ const VideoCapture = ({ isActive, onImageCapture }) => {
   const [faceRecognitionLoading, setFaceRecognitionLoading] = useState(false);
   const [imageAnalysisResult, setImageAnalysisResult] = useState(null);
   const [imageAnalysisLoading, setImageAnalysisLoading] = useState(false);
+  const [patientData, setPatientData] = useState(null);
   
   // Function to check if an image is blank/black
   const isImageBlank = (imageData) => {
@@ -64,7 +65,7 @@ const VideoCapture = ({ isActive, onImageCapture }) => {
   };
   
   // Function to capture image from video
-  const captureImage = useCallback(async () => {
+  const captureImage = useCallback(async (mode) => {
     if (!videoRef.current) {
       console.warn('Video element not available');
       return false;
@@ -80,7 +81,7 @@ const VideoCapture = ({ isActive, onImageCapture }) => {
       return false;
     }
     
-    console.log('Capturing image from video', {
+    console.log(`Capturing ${mode} image from video`, {
       videoWidth: videoRef.current.videoWidth,
       videoHeight: videoRef.current.videoHeight,
       readyState: videoRef.current.readyState
@@ -104,7 +105,7 @@ const VideoCapture = ({ isActive, onImageCapture }) => {
       // Convert to data URL with higher quality
       const imageDataUrl = canvasRef.current.toDataURL('image/jpeg', 0.95);
       
-      console.log('Raw image captured, data URL length:', imageDataUrl.length);
+      console.log(`Raw ${mode} image captured, data URL length:`, imageDataUrl.length);
       
       // Check if the image is blank
       const isBlank = await isImageBlank(imageDataUrl);
@@ -114,26 +115,26 @@ const VideoCapture = ({ isActive, onImageCapture }) => {
         return false;
       }
       
-      console.log('Valid image captured successfully, data URL length:', imageDataUrl.length);
+      console.log(`Valid ${mode} image captured successfully, data URL length:`, imageDataUrl.length);
       
       // Store the image and notify parent component
       setStoredImage(imageDataUrl);
       setHasValidImage(true);
       onImageCapture(imageDataUrl);
       
-      // Process the image based on the current mode
-      if (captureMode === 'face') {
+      // Process the image based on the mode
+      if (mode === 'face') {
         await processFaceRecognition(imageDataUrl);
-      } else if (captureMode === 'medical') {
+      } else if (mode === 'medical') {
         await processMedicalImageAnalysis(imageDataUrl);
       }
       
       return true;
     } catch (error) {
-      console.error('Error capturing image:', error);
+      console.error(`Error capturing ${mode} image:`, error);
       return false;
     }
-  }, [onImageCapture, isCameraReady, captureMode]);
+  }, [onImageCapture, isCameraReady]);
   
   // Function to process face recognition
   const processFaceRecognition = async (imageData) => {
@@ -149,8 +150,10 @@ const VideoCapture = ({ isActive, onImageCapture }) => {
       console.log('Face recognition result:', response.data);
       setFaceRecognitionResult(response.data);
       
-      // Switch to medical image mode after face recognition is done
-      setCaptureMode('medical');
+      // Store patient data if available
+      if (response.data.patient_data) {
+        setPatientData(response.data.patient_data);
+      }
       
     } catch (error) {
       console.error('Error in face recognition:', error);
@@ -188,18 +191,18 @@ const VideoCapture = ({ isActive, onImageCapture }) => {
     }
   };
   
-  // Manual capture button handler with status updates
-  const handleManualCapture = async () => {
+  // Face capture button handler
+  const handleFaceCapture = async () => {
     if (isCameraReady) {
-      console.log('Manual capture triggered');
-      setCameraStatus(`Capturing ${captureMode === 'face' ? 'face' : 'medical'} image...`);
+      console.log('Manual face capture triggered');
+      setCameraStatus('Capturing face image...');
       
-      const success = await captureImage();
+      const success = await captureImage('face');
       
       if (success) {
-        setCameraStatus(`${captureMode === 'face' ? 'Face' : 'Medical'} image captured successfully!`);
+        setCameraStatus('Face image captured successfully!');
       } else {
-        setCameraStatus('Failed to capture image. Try again.');
+        setCameraStatus('Failed to capture face image. Try again.');
       }
       
       // Reset status after a delay
@@ -209,20 +212,26 @@ const VideoCapture = ({ isActive, onImageCapture }) => {
     }
   };
   
-  // Function to retry capture if needed
-  const handleRetryCapture = async () => {
-    setHasValidImage(false);
-    await handleManualCapture();
-  };
-  
-  // Reset capture mode when starting a new stream
-  useEffect(() => {
-    if (isActive) {
-      setCaptureMode('face');
-      setFaceRecognitionResult(null);
-      setImageAnalysisResult(null);
+  // Medical image capture button handler
+  const handleMedicalCapture = async () => {
+    if (isCameraReady) {
+      console.log('Manual medical image capture triggered');
+      setCameraStatus('Capturing medical image...');
+      
+      const success = await captureImage('medical');
+      
+      if (success) {
+        setCameraStatus('Medical image captured successfully!');
+      } else {
+        setCameraStatus('Failed to capture medical image. Try again.');
+      }
+      
+      // Reset status after a delay
+      setTimeout(() => {
+        setCameraStatus(isCameraReady ? 'Camera active' : 'Initializing camera...');
+      }, 2000);
     }
-  }, [isActive]);
+  };
   
   // When stream ends, ensure the parent has the latest image
   useEffect(() => {
@@ -269,7 +278,7 @@ const VideoCapture = ({ isActive, onImageCapture }) => {
                 videoRef.current.play()
                   .then(() => {
                     console.log('Video playback started');
-                    setCameraStatus(`Camera active - Click "Capture ${captureMode === 'face' ? 'Face' : 'Medical Image'}" button when ready`);
+                    setCameraStatus('Camera active - Use the capture buttons below');
                     
                     // Wait a moment to ensure video is actually rendering frames
                     setTimeout(() => {
@@ -298,7 +307,7 @@ const VideoCapture = ({ isActive, onImageCapture }) => {
           });
       } else {
         // Camera is already initialized, just update the status
-        setCameraStatus(`Camera active - Click "Capture ${captureMode === 'face' ? 'Face' : 'Medical Image'}" button when ready`);
+        setCameraStatus('Camera active - Use the capture buttons below');
       }
     } else if (!isActive) {
       // Stop camera when stream ends
@@ -325,7 +334,7 @@ const VideoCapture = ({ isActive, onImageCapture }) => {
         streamRef.current.getTracks().forEach(track => track.stop());
       }
     };
-  }, [isActive, cameraError, storedImage, captureMode]); // Added captureMode to dependencies
+  }, [isActive, cameraError, storedImage]); // Remove captureMode from dependencies
   
   // Render face recognition result
   const renderFaceRecognition = () => {
@@ -404,6 +413,103 @@ const VideoCapture = ({ isActive, onImageCapture }) => {
     return null;
   };
   
+  // Render patient medical history
+  const renderPatientMedicalHistory = () => {
+    if (!patientData) return null;
+    
+    return (
+      <div className="patient-medical-history">
+        <h3>Patient Medical History</h3>
+        <div className="patient-header">
+          <div className="patient-name-id">
+            <h4>{patientData.full_name}</h4>
+            <div className="patient-id-tag">ID: {patientData.patient_id}</div>
+          </div>
+          <div className="patient-demographics">
+            <span>Age: {patientData.age}</span>
+            <span>Gender: {patientData.gender}</span>
+            <span>Blood Type: {patientData.blood_type}</span>
+          </div>
+        </div>
+        
+        <div className="medical-data-grid">
+          <div className="medical-data-column">
+            <div className="medical-data-section">
+              <h5>Allergies</h5>
+              <ul>
+                {patientData.allergies.map((allergy, index) => (
+                  <li key={`allergy-${index}`}>{allergy}</li>
+                ))}
+              </ul>
+            </div>
+            
+            <div className="medical-data-section">
+              <h5>Medical Conditions</h5>
+              <ul>
+                {patientData.medical_conditions.map((condition, index) => (
+                  <li key={`condition-${index}`}>{condition}</li>
+                ))}
+              </ul>
+            </div>
+          </div>
+          
+          <div className="medical-data-column">
+            <div className="medical-data-section">
+              <h5>Current Medications</h5>
+              <ul>
+                {patientData.current_medications.map((med, index) => (
+                  <li key={`med-${index}`}>{med.name} {med.dosage} ({med.frequency})</li>
+                ))}
+              </ul>
+            </div>
+            
+            <div className="medical-data-section">
+              <h5>Recent Visits</h5>
+              <ul className="visits-list">
+                {patientData.recent_visits.map((visit, index) => (
+                  <li key={`visit-${index}`}>
+                    <span className="visit-date">{visit.date}</span>
+                    <span className="visit-reason">{visit.reason}</span>
+                    <span className="visit-doctor">{visit.doctor}</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          </div>
+        </div>
+        
+        <div className="medical-data-section lab-results">
+          <h5>Lab Results</h5>
+          <table>
+            <thead>
+              <tr>
+                <th>Date</th>
+                <th>Test</th>
+                <th>Result</th>
+                <th>Notes</th>
+              </tr>
+            </thead>
+            <tbody>
+              {patientData.lab_results.map((lab, index) => (
+                <tr key={`lab-${index}`}>
+                  <td>{lab.date}</td>
+                  <td>{lab.test}</td>
+                  <td>{lab.result}</td>
+                  <td>{lab.notes}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+        
+        <div className="medical-data-section">
+          <h5>Clinical Notes</h5>
+          <p className="clinical-notes">{patientData.notes}</p>
+        </div>
+      </div>
+    );
+  };
+  
   return (
     <div className="video-capture-container">
       <div className="video-capture">
@@ -420,28 +526,6 @@ const VideoCapture = ({ isActive, onImageCapture }) => {
             <div className="status-indicator">
               {cameraStatus}
               {hasValidImage && <span className="checkmark">✓</span>}
-            </div>
-            
-            <div className="buttons">
-              <button 
-                className="capture-button"
-                onClick={handleManualCapture}
-                disabled={!isCameraReady}
-                title={`Take a ${captureMode === 'face' ? 'face' : 'medical'} image`}
-              >
-                📷 Capture {captureMode === 'face' ? 'Face' : 'Medical Image'}
-              </button>
-              
-              {hasValidImage && (
-                <button 
-                  className="retry-button"
-                  onClick={handleRetryCapture}
-                  disabled={!isCameraReady}
-                  title={`Capture a new ${captureMode === 'face' ? 'face' : 'medical'} image`}
-                >
-                  🔄 Retry
-                </button>
-              )}
             </div>
           </div>
         )}
@@ -465,9 +549,29 @@ const VideoCapture = ({ isActive, onImageCapture }) => {
         )}
       </div>
       
+      {isActive && (
+        <div className="capture-buttons">
+          <button 
+            className="face-capture-button"
+            onClick={handleFaceCapture}
+            disabled={!isCameraReady || faceRecognitionLoading}
+          >
+            👤 Capture Face
+          </button>
+          <button 
+            className="medical-capture-button"
+            onClick={handleMedicalCapture}
+            disabled={!isCameraReady || imageAnalysisLoading}
+          >
+            🩺 Capture Medical Image
+          </button>
+        </div>
+      )}
+      
       <div className="image-analysis-container">
         {renderFaceRecognition()}
         {renderImageAnalysis()}
+        {renderPatientMedicalHistory()}
       </div>
     </div>
   );

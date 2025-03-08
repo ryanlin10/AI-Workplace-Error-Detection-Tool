@@ -342,6 +342,16 @@ const VideoCapture = ({ isActive, onImageCapture }) => {
             <div className="person-name">{faceRecognitionResult.person_name}</div>
             <div className="person-profession">{faceRecognitionResult.person_profession}</div>
             <div className="confidence">Confidence: {faceRecognitionResult.confidence}%</div>
+            {faceRecognitionResult.reference_comparison && faceRecognitionResult.reference_image_url && (
+              <div className="reference-image-container">
+                <p>Matched with reference image:</p>
+                <img 
+                  src={`http://localhost:8080${faceRecognitionResult.reference_image_url}`} 
+                  alt={`Reference for ${faceRecognitionResult.person_name}`} 
+                  className="reference-image"
+                />
+              </div>
+            )}
             {faceRecognitionResult.is_fallback && (
               <div className="fallback-notice">
                 Note: Using simulated recognition (API issue)

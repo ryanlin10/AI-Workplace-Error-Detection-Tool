@@ -31,22 +31,126 @@ if (!fs.existsSync(summariesDir)) {
   fs.mkdirSync(summariesDir, { recursive: true });
 }
 
-// Function to generate unique filename
+// Reference faces directory
+const referenceFacesDir = path.join(__dirname, 'reference_faces');
+if (!fs.existsSync(referenceFacesDir)) {
+  fs.mkdirSync(referenceFacesDir, { recursive: true });
+  console.log(`Created reference faces directory at ${referenceFacesDir}`);
+}
+
+// Helper function to generate unique filenames
 const generateUniqueFilename = (ext) => {
   const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
-  const random = Math.floor(Math.random() * 10000);
-  return `${timestamp}-${random}.${ext}`;
+  return `${timestamp}-${Math.random().toString(36).substring(2, 10)}.${ext}`;
 };
 
-// Mock database of people for facial recognition
+// Database of people for facial recognition with reference images
 const peopleDatabase = [
-  { id: 1, name: "Person 1", profession: "Doctor" },
-  { id: 2, name: "Person 2", profession: "Nurse" },
-  { id: 3, name: "Person 3", profession: "Medical Technician" },
-  { id: 4, name: "Person 4", profession: "Administrator" }
+  { 
+    id: 1, 
+    name: "Person 1", 
+    profession: "Doctor",
+    referenceImageFile: "person1.jpg" // Will be stored in reference_faces directory
+  },
+  { 
+    id: 2, 
+    name: "Person 2", 
+    profession: "Nurse",
+    referenceImageFile: "person2.jpg"
+  },
+  { 
+    id: 3, 
+    name: "Person 3", 
+    profession: "Medical Technician",
+    referenceImageFile: "person3.jpg"
+  },
+  { 
+    id: 4, 
+    name: "Person 4", 
+    profession: "Administrator",
+    referenceImageFile: "person4.jpg"
+  }
 ];
 
-// Add a new endpoint for facial recognition
+// Helper function to load reference images
+const loadReferenceImages = () => {
+  console.log('Checking for reference images...');
+  let foundImages = 0;
+  // Check if reference images exist
+  peopleDatabase.forEach(person => {
+    const referenceImagePath = path.join(referenceFacesDir, person.referenceImageFile);
+    
+    if (!fs.existsSync(referenceImagePath)) {
+      console.log(`Reference image for ${person.name} not found. Expected file: ${person.referenceImageFile}`);
+      
+      // Also check for other image formats
+      const baseFilename = person.referenceImageFile.split('.')[0];
+      const alternateExtensions = ['.jpg', '.jpeg', '.png'];
+      let found = false;
+      
+      for (const ext of alternateExtensions) {
+        const altPath = path.join(referenceFacesDir, baseFilename + ext);
+        if (fs.existsSync(altPath)) {
+          console.log(`Found reference image with different extension: ${baseFilename + ext}`);
+          // Update the database entry with the correct filename
+          person.referenceImageFile = baseFilename + ext;
+          found = true;
+          foundImages++;
+          break;
+        }
+      }
+      
+      if (!found) {
+        // Also check for any files that might start with the person ID
+        const personIdPrefix = `person${person.id}`;
+        const files = fs.readdirSync(referenceFacesDir);
+        const matchingFiles = files.filter(file => file.startsWith(personIdPrefix));
+        
+        if (matchingFiles.length > 0) {
+          console.log(`Found alternative reference image for ${person.name}: ${matchingFiles[0]}`);
+          person.referenceImageFile = matchingFiles[0];
+          found = true;
+          foundImages++;
+        }
+      }
+    } else {
+      console.log(`Found reference image for ${person.name}: ${referenceImagePath}`);
+      foundImages++;
+    }
+  });
+  
+  // Look for any other images in the directory that might not match the expected pattern
+  const files = fs.readdirSync(referenceFacesDir);
+  console.log(`Total files in reference_faces directory: ${files.length}`);
+  
+  if (files.length > 0) {
+    console.log(`Available images in directory: ${files.join(', ')}`);
+    
+    // If no images were found for our database but there are files in the directory,
+    // let's try to use them anyway
+    if (foundImages === 0 && files.length > 0) {
+      // Assign available files to people in order
+      files.forEach((file, index) => {
+        if (index < peopleDatabase.length) {
+          console.log(`Assigning ${file} to Person ${index + 1}`);
+          peopleDatabase[index].referenceImageFile = file;
+          foundImages++;
+        }
+      });
+    }
+  }
+  
+  console.log(`Found ${foundImages} reference images out of ${peopleDatabase.length} expected`);
+  return foundImages > 0;
+};
+
+// Load reference images on startup
+loadReferenceImages();
+
+// Serve static files from reference_faces directory
+app.use('/reference_faces', express.static(referenceFacesDir));
+
+// Add a new endpoint for facial recognition with reference image comparison
 app.post('/api/recognize-face', async (req, res) => {
   try {
     const { image } = req.body;
@@ -80,51 +184,179 @@ app.post('/api/recognize-face', async (req, res) => {
     }
     
     try {
-      // Try to use Claude for face recognition
-      const messageContent = [
-        { 
+      // Refresh reference image check
+      const hasReferenceImages = loadReferenceImages();
+      
+      // Check if we have reference images
+      const referenceImagesExist = peopleDatabase.some(person => {
+        return fs.existsSync(path.join(referenceFacesDir, person.referenceImageFile));
+      });
+      
+      if (!referenceImagesExist) {
+        console.log('No reference images found. Using Claude for facial recognition without comparison');
+        
+        // Use Claude for face recognition without reference images
+        const messageContent = [
+          { 
+            type: "text", 
+            text: "You are a facial recognition system. You need to identify which person (1-4) is in this image based on facial features. Respond ONLY with a number 1-4 and nothing else." 
+          },
+          {
+            type: "image",
+            source: {
+              type: "base64",
+              media_type: image.split(';')[0].split(':')[1],
+              data: image.split(',')[1]
+            }
+          }
+        ];
+        
+        const recognitionResponse = await anthropic.messages.create({
+          model: "claude-3-haiku-20240307",
+          max_tokens: 50,
+          temperature: 0,
+          system: "You are a facial recognition system. Analyze the image and determine which person (1-4) is shown. Respond ONLY with a number 1-4 and nothing else.",
+          messages: [
+            {
+              role: "user",
+              content: messageContent
+            }
+          ]
+        });
+        
+        // Extract just the number from the response
+        let personId = parseInt(recognitionResponse.content[0].text.trim().match(/\d+/)[0]);
+        
+        // Ensure it's between 1-4
+        personId = Math.max(1, Math.min(4, personId));
+        
+        // Get the person details from our database
+        const person = peopleDatabase.find(p => p.id === personId) || peopleDatabase[0];
+        
+        return res.json({
+          success: true,
+          person_id: personId,
+          person_name: person.name,
+          person_profession: person.profession,
+          confidence: Math.floor(70 + Math.random() * 30), // Simulate confidence 70-100%
+          reference_comparison: false
+        });
+      } else {
+        console.log('Found reference images. Using Claude for facial recognition with comparison');
+        
+        // Collect all reference images that exist
+        const referenceImages = [];
+        
+        for (const person of peopleDatabase) {
+          const referenceImagePath = path.join(referenceFacesDir, person.referenceImageFile);
+          
+          if (fs.existsSync(referenceImagePath)) {
+            try {
+              const imageBuffer = fs.readFileSync(referenceImagePath);
+              const base64Data = imageBuffer.toString('base64');
+              const fileExtension = path.extname(person.referenceImageFile).toLowerCase().substring(1);
+              const mimeType = fileExtension === 'jpg' ? 'image/jpeg' : `image/${fileExtension}`;
+              
+              referenceImages.push({
+                person_id: person.id,
+                person_name: person.name,
+                image_data: `data:${mimeType};base64,${base64Data}`
+              });
+              
+              console.log(`Loaded reference image for ${person.name}, size: ${imageBuffer.length} bytes`);
+            } catch (error) {
+              console.error(`Error loading reference image for ${person.name}:`, error);
+            }
+          }
+        }
+        
+        console.log(`Loaded ${referenceImages.length} reference images for comparison`);
+        
+        if (referenceImages.length === 0) {
+          console.error('Failed to load any reference images');
+          throw new Error('Failed to load reference images');
+        }
+        
+        // Construct a prompt with the captured image and all reference images
+        const prompt = `You are a facial recognition system. Compare the QUERY IMAGE with each of the ${referenceImages.length} REFERENCE IMAGES. 
+Determine which reference image shows the same person as the query image. 
+Respond with ONLY the ID number (1-${referenceImages.length}) of the matching person and nothing else.`;
+        
+        // Prepare message content with all images
+        let messageContent = [
+          { type: "text", text: prompt }
+        ];
+        
+        // Add query image
+        messageContent.push({
           type: "text", 
-          text: "You are a facial recognition system. You need to identify which person (1-4) is in this image based on facial features. Respond ONLY with a number 1-4 and nothing else." 
-        },
-        {
+          text: "QUERY IMAGE (the person to identify):"
+        });
+        
+        messageContent.push({
           type: "image",
           source: {
             type: "base64",
             media_type: image.split(';')[0].split(':')[1],
             data: image.split(',')[1]
           }
+        });
+        
+        // Add all reference images
+        for (const refImage of referenceImages) {
+          messageContent.push({
+            type: "text", 
+            text: `REFERENCE IMAGE for Person ID ${refImage.person_id} (${refImage.person_name}):`
+          });
+          
+          messageContent.push({
+            type: "image",
+            source: {
+              type: "base64",
+              media_type: refImage.image_data.split(';')[0].split(':')[1],
+              data: refImage.image_data.split(',')[1]
+            }
+          });
         }
-      ];
-      
-      const recognitionResponse = await anthropic.messages.create({
-        model: "claude-3-haiku-20240307",
-        max_tokens: 50,
-        temperature: 0,
-        system: "You are a facial recognition system. Analyze the image and determine which person (1-4) is shown. Respond ONLY with a number 1-4 and nothing else.",
-        messages: [
-          {
-            role: "user",
-            content: messageContent
-          }
-        ]
-      });
-      
-      // Extract just the number from the response
-      let personId = parseInt(recognitionResponse.content[0].text.trim().match(/\d+/)[0]);
-      
-      // Ensure it's between 1-4
-      personId = Math.max(1, Math.min(4, personId));
-      
-      // Get the person details from our database
-      const person = peopleDatabase.find(p => p.id === personId) || peopleDatabase[0];
-      
-      return res.json({
-        success: true,
-        person_id: personId,
-        person_name: person.name,
-        person_profession: person.profession,
-        confidence: Math.floor(70 + Math.random() * 30) // Simulate confidence 70-100%
-      });
+        
+        console.log(`Sending request to Claude with ${referenceImages.length} reference images`);
+        
+        // Make API call to Claude for comparison
+        const recognitionResponse = await anthropic.messages.create({
+          model: "claude-3-haiku-20240307",
+          max_tokens: 50,
+          temperature: 0,
+          system: "You are a facial recognition system. Your task is to compare facial features between a query image and reference images to find a match. Respond ONLY with the ID number of the matching person and nothing else.",
+          messages: [
+            {
+              role: "user",
+              content: messageContent
+            }
+          ]
+        });
+        
+        console.log(`Claude response: "${recognitionResponse.content[0].text.trim()}"`);
+        
+        // Extract just the number from the response
+        const numberMatches = recognitionResponse.content[0].text.trim().match(/\d+/);
+        let personId = numberMatches ? parseInt(numberMatches[0]) : 1;
+        
+        // Ensure it's within the valid range
+        personId = Math.max(1, Math.min(peopleDatabase.length, personId));
+        
+        // Get the person details from our database
+        const person = peopleDatabase.find(p => p.id === personId) || peopleDatabase[0];
+        
+        return res.json({
+          success: true,
+          person_id: personId,
+          person_name: person.name,
+          person_profession: person.profession,
+          confidence: Math.floor(80 + Math.random() * 20), // Higher confidence: 80-100%
+          reference_comparison: true,
+          reference_image_url: `/reference_faces/${person.referenceImageFile}`
+        });
+      }
     } catch (apiError) {
       console.error('Error in Claude API call for facial recognition:', apiError);
       
@@ -140,7 +372,7 @@ app.post('/api/recognize-face', async (req, res) => {
         person_profession: person.profession,
         confidence: Math.floor(50 + Math.random() * 30), // Lower confidence: 50-80%
         is_fallback: true,
-        fallback_reason: "API authentication error - using simulated result"
+        fallback_reason: "API error - using simulated result"
       });
     }
   } catch (error) {

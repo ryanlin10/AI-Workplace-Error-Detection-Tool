@@ -14,9 +14,21 @@ const VideoCapture = ({ isActive, onImageCapture }) => {
   const [captureMode, setCaptureMode] = useState('face'); // 'face' or 'medical'
   const [faceRecognitionResult, setFaceRecognitionResult] = useState(null);
   const [faceRecognitionLoading, setFaceRecognitionLoading] = useState(false);
+  const [faceRecognitionError, setFaceRecognitionError] = useState(null);
   const [imageAnalysisResult, setImageAnalysisResult] = useState(null);
   const [imageAnalysisLoading, setImageAnalysisLoading] = useState(false);
+  const [imageAnalysisError, setImageAnalysisError] = useState(null);
   const [patientData, setPatientData] = useState(null);
+  const [textInput, setTextInput] = useState("");
+  const [medicationSummary, setMedicationSummary] = useState({
+    painkillers: 2,
+    antibiotics: 1,
+    antihistamines: 0,
+    sedatives: 1
+  });
+  
+  // Audio input status
+  const [audioStatus, setAudioStatus] = useState("Audio recognition not available. Please use manual input.");
   
   // Function to check if an image is blank/black
   const isImageBlank = (imageData) => {
@@ -602,6 +614,92 @@ const VideoCapture = ({ isActive, onImageCapture }) => {
     );
   };
   
+  // Add AR overlay to display patient information directly on the video
+  const renderAROverlay = () => {
+    if (!faceRecognitionResult || !faceRecognitionResult.success || !patientData) {
+      return null;
+    }
+
+    // Get current time for the AR display
+    const now = new Date();
+    const timeString = now.toLocaleTimeString();
+    const dateString = now.toLocaleDateString();
+    
+    return (
+      <div className="ar-patient-overlay">
+        <div className="ar-overlay-header">
+          <div>
+            <span className="ar-highlight">BuildX2</span> • Medical AR Interface
+          </div>
+          <div>
+            <span>{timeString}</span> • <span>{dateString}</span>
+          </div>
+        </div>
+        
+        <div className="ar-patient-info">
+          <div className="ar-patient-name">{patientData.full_name}</div>
+          <div className="ar-patient-details">
+            <span className="ar-highlight">ID:</span> {patientData.patient_id} • 
+            <span className="ar-highlight"> Age:</span> {patientData.age} • 
+            <span className="ar-highlight"> Blood Type:</span> {patientData.blood_type}
+          </div>
+          
+          {patientData.current_complaint && (
+            <div className="ar-warning">
+              <strong>Current complaint:</strong> {patientData.current_complaint.description}
+              <span> ({patientData.current_complaint.duration})</span>
+            </div>
+          )}
+          
+          <div>
+            <span className="ar-vitals">
+              <span className="ar-highlight">Conditions</span>: {patientData.medical_conditions.length}
+            </span>
+            <span className="ar-vitals">
+              <span className="ar-highlight">Allergies</span>: {patientData.allergies.length}
+            </span>
+          </div>
+          
+          {patientData.medical_conditions && patientData.medical_conditions.length > 0 && (
+            <div className="ar-conditions">
+              {patientData.medical_conditions[0]}
+              {patientData.medical_conditions.length > 1 && ` +${patientData.medical_conditions.length - 1} more`}
+            </div>
+          )}
+        </div>
+        
+        <div className="medication-summary">
+          <h4>Medication Administered</h4>
+          <ul>
+            <li>Painkillers: {medicationSummary.painkillers}</li>
+            <li>Antibiotics: {medicationSummary.antibiotics}</li>
+            <li>Antihistamines: {medicationSummary.antihistamines}</li>
+            <li>Sedatives: {medicationSummary.sedatives}</li>
+          </ul>
+        </div>
+      </div>
+    );
+  };
+  
+  // Add handleTextSubmit function
+  const handleTextSubmit = () => {
+    if (!textInput.trim()) return;
+    
+    // Process the text input here (similar to how you would process audio)
+    console.log("Processing text input:", textInput);
+    
+    // Example: Update medication summary based on text
+    if (textInput.toLowerCase().includes("painkiller") || textInput.toLowerCase().includes("pain medication")) {
+      setMedicationSummary(prev => ({...prev, painkillers: prev.painkillers + 1}));
+    }
+    if (textInput.toLowerCase().includes("antibiotic")) {
+      setMedicationSummary(prev => ({...prev, antibiotics: prev.antibiotics + 1}));
+    }
+    
+    // Clear the input after submission
+    setTextInput("");
+  };
+  
   return (
     <div className="video-capture-container">
       <div className="video-capture">
@@ -612,6 +710,8 @@ const VideoCapture = ({ isActive, onImageCapture }) => {
           playsInline
           autoPlay
         />
+        
+        {renderAROverlay()}
         
         {isActive && (
           <div className="camera-controls">

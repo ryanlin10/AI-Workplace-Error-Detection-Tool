@@ -9,6 +9,8 @@ const AudioRecorder = ({ isRecording, onTranscriptUpdate }) => {
   const mediaRecorderRef = useRef(null);
   const recognitionRef = useRef(null);
   const prevRecordingStateRef = useRef(false);
+  const recognitionError = useRef(null);
+  const recognitionSupported = useRef(false);
   
   // Reset transcript when starting a new recording
   useEffect(() => {
@@ -121,6 +123,8 @@ const AudioRecorder = ({ isRecording, onTranscriptUpdate }) => {
           setUseFallback(true);
         }
       };
+      
+      recognitionSupported.current = true;
     } else {
       console.error('Speech recognition not supported in this browser');
       setUseFallback(true);
@@ -229,79 +233,50 @@ const AudioRecorder = ({ isRecording, onTranscriptUpdate }) => {
   
   return (
     <div className="audio-recorder">
-      {isRecording ? (
-        <div className="recording-indicator">
-          <div className="recording-icon"></div>
-          <span>
-            {useFallback ? 'Manual input mode' : (recognitionActive ? 'Recording audio...' : 'Initializing microphone...')}
-          </span>
-          
-          <div className="recognition-status">
-            <p>Status: {
-              useFallback ? 'Using manual input mode' : 
-              (recognitionActive ? 'Speech recognition active' : 'Speech recognition initializing')
-            }</p>
-            {!useFallback && !recognitionActive && (
-              <button 
-                onClick={() => {
-                  if (recognitionRef.current) {
-                    try {
-                      console.log('Manually starting speech recognition');
-                      recognitionRef.current.start();
-                    } catch (error) {
-                      console.error('Error manually starting speech recognition:', error);
-                    }
-                  }
-                }}
-              >
-                Try Start Recognition
-              </button>
-            )}
-            <button 
-              onClick={() => {
-                // Force fallback mode
-                if (recognitionRef.current) {
-                  try {
-                    recognitionRef.current.stop();
-                  } catch (e) {}
-                }
-                setUseFallback(true);
-              }}
-            >
-              Switch to Manual Input
-            </button>
-          </div>
-          
-          {useFallback && (
-            <div className="manual-input">
-              <p>Speech recognition not available. Enter text manually:</p>
-              <div className="input-group">
-                <input 
-                  type="text" 
-                  value={manualInput}
-                  onChange={handleManualInputChange}
-                  onKeyPress={handleKeyPress}
-                  placeholder="Type your text here..."
-                  autoFocus
-                />
-                <button onClick={handleManualInputSubmit}>Add</button>
-              </div>
-            </div>
-          )}
-          
-          {transcript && (
-            <div className="current-transcript">
-              <p><strong>Current transcript:</strong></p>
-              <p>{transcript}</p>
-            </div>
-          )}
-        </div>
-      ) : (
-        <div className="recorder-inactive">
-          <p>Click "Start Stream" to begin recording</p>
-          <button onClick={() => setUseFallback(!useFallback)}>
-            {useFallback ? "Try Speech Recognition" : "Use Manual Text Input"}
-          </button>
+      <div className="audio-status">
+        {recognitionError.current ? (
+          <p className="error-message">
+            Speech recognition error: {recognitionError.current}. <br />
+            Using manual input mode.
+          </p>
+        ) : recognitionSupported.current ? (
+          isRecording ? (
+            <p>
+              <span className="listening-indicator">●</span> Listening...
+              {transcript && <span className="hint">Say something!</span>}
+            </p>
+          ) : (
+            <p>Click "Start Stream" to begin speech recognition</p>
+          )
+        ) : (
+          <p>
+            Speech recognition not available. <br />
+            Please use manual input below.
+          </p>
+        )}
+      </div>
+
+      {/* Add a text input for manual entry of spoken words */}
+      <div className="text-input-container">
+        <input
+          type="text"
+          value={manualInput}
+          onChange={(e) => setManualInput(e.target.value)}
+          placeholder="Type your message here..."
+          disabled={isRecording && recognitionSupported.current && !recognitionError.current}
+        />
+        <button
+          onClick={handleManualInputSubmit}
+          disabled={isRecording && recognitionSupported.current && !recognitionError.current}
+        >
+          Submit
+        </button>
+      </div>
+      
+      {transcript && (
+        <div className="transcript">
+          <h3>Current Transcript:</h3>
+          <p>{transcript}</p>
         </div>
       )}
     </div>

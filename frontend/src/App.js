@@ -174,97 +174,86 @@ function App() {
   };
 
   return (
-    <div className="app-container">
-      <h1>Medical Assistant</h1>
-      <h3>Reducing Errors in Medical Practice</h3>
-      
-      <div className="controls">
-        <button 
-          className={`control-button ${isRecording ? 'disabled' : 'start'}`}
-          onClick={handleStartStream}
-          disabled={isRecording || isProcessing}
-        >
-          Start Stream
-        </button>
-        <button 
-          className={`control-button ${!isRecording ? 'disabled' : 'stop'}`}
-          onClick={handleEndStream}
-          disabled={!isRecording || isProcessing}
-        >
-          End Stream
-        </button>
-      </div>
-      
-      <div className="input-container">
-        <div className="input-section">
-          <h2>Audio Input</h2>
-          <AudioRecorder 
-            isRecording={isRecording} 
-            onTranscriptUpdate={handleTranscriptUpdate} 
-          />
-          {audioText && (
-            <div className="transcript">
-              <h3>Transcript:</h3>
-              <p>{audioText}</p>
-            </div>
-          )}
+    <div className="App">
+      <div className="app-container">
+        <h1>Augmented Reality Medical Assistant</h1>
+        <p>Reducing Errors in Medical Practice</p>
+        
+        <div className="controls">
+          <button 
+            className={`control-button ${isRecording ? 'disabled' : 'start'}`}
+            onClick={handleStartStream}
+            disabled={isRecording || isProcessing}
+          >
+            Start Stream
+          </button>
+          <button 
+            className={`control-button ${!isRecording ? 'disabled' : 'stop'}`}
+            onClick={handleEndStream}
+            disabled={!isRecording || isProcessing}
+          >
+            End Stream
+          </button>
         </div>
         
-        <div className="input-section">
-          <h2>Video Input</h2>
-          <VideoCapture 
-            isActive={isRecording} 
-            onImageCapture={handleImageCapture} 
-          />
-          {capturedImage && (
-            <div className="image-preview">
-              <h3>Captured Image:</h3>
-              <img src={capturedImage} alt="Captured" />
-            </div>
-          )}
-        </div>
-      </div>
-      
-      {isProcessing && (
-        <div className="processing">
-          <p>Processing your data...</p>
-          <div className="spinner"></div>
-        </div>
-      )}
-      
-      {error && (
-        <div className="error">
-          <h3>Error:</h3>
-          <p>{error}</p>
-        </div>
-      )}
-      
-      {result && (
-        <ResultDisplay result={result} />
-      )}
-      
-      {/* Add debug information section that's hidden by default */}
-      <div className="debug-section">
-        <details>
-          <summary>Debug Information</summary>
-          <div className="debug-content">
-            <h4>Last Text Sent:</h4>
-            <p>{debug.lastTextSent || 'None'}</p>
-            
-            <h4>Last Image Sent:</h4>
-            <p>{debug.lastImageSent ? 'Yes' : 'No'}</p>
-            
-            <h4>API Responses:</h4>
-            <ul>
-              {debug.apiResponses.map((resp, idx) => (
-                <li key={idx}>
-                  {resp.timestamp}: Status {resp.status} 
-                  {resp.error ? ` - Error: ${resp.error}` : ''}
-                </li>
-              ))}
-            </ul>
+        <div className="content-container">
+          {/* Video takes up the left/main portion in landscape mode */}
+          <div className="video-section">
+            <VideoCapture 
+              isActive={isRecording} 
+              onImageCapture={handleImageCapture} 
+            />
           </div>
-        </details>
+          
+          {/* Audio and results on the right side */}
+          <div className="info-section">
+            <AudioRecorder 
+              isRecording={isRecording} 
+              onTranscriptUpdate={handleTranscriptUpdate} 
+            />
+            
+            {isProcessing && (
+              <div className="processing">
+                <p>Processing your data...</p>
+                <div className="spinner"></div>
+              </div>
+            )}
+            
+            {error && (
+              <div className="error">
+                <h3>Error:</h3>
+                <p>{error}</p>
+              </div>
+            )}
+            
+            {result && (
+              <ResultDisplay result={result} />
+            )}
+          </div>
+        </div>
+        
+        {/* Add debug information section that's hidden by default */}
+        <div className="debug-section">
+          <details>
+            <summary>Debug Information</summary>
+            <div className="debug-content">
+              <h4>Last Request</h4>
+              <ul>
+                <li>Text: {debug.lastTextSent ? `${debug.lastTextSent.substring(0, 50)}...` : 'None'}</li>
+                <li>Image: {debug.lastImageSent ? 'Yes' : 'No'}</li>
+              </ul>
+              <h4>API Responses</h4>
+              <ul>
+                {debug.apiResponses.map((resp, index) => (
+                  <li key={index}>
+                    {resp.timestamp}: {resp.status} 
+                    {resp.error && ` - Error: ${resp.error}`}
+                  </li>
+                ))}
+              </ul>
+            </div>
+          </details>
+        </div>
       </div>
     </div>
   );

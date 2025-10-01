@@ -5,7 +5,7 @@
   margin-top: 25px;
   box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
   backdrop-filter: blur(8px);
-  border: 1px solid rgba(100, 255, 100, 0.15);
+  border: 1px solid rgba(0, 131, 143, 0.3);
   position: relative;
   overflow: hidden;
 }
@@ -143,8 +143,8 @@
 .measurements-list li {
   margin-bottom: 12px;
   padding: 10px 15px;
-  background: rgba(30, 60, 30, 0.4);
-  border-left: 3px solid #4dff4d;
+  background: rgba(30, 60, 60, 0.4);
+  border-left: 3px solid #00838f;
   border-radius: 0 8px 8px 0;
   transition: all 0.2s ease;
   line-height: 1.5;

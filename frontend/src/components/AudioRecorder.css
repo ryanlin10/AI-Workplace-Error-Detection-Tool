@@ -14,49 +14,90 @@
   border-radius: 6px;
   background-color: rgba(0, 0, 0, 0.3);
   font-size: 14px;
+  display: flex;
+  align-items: center;
+  min-height: 40px;
 }
 
 .listening-indicator {
   color: #ff5252;
   animation: pulse 1.5s infinite;
   margin-right: 8px;
+  font-size: 16px;
+  display: inline-block;
 }
 
 .error-message {
   color: #ff5252;
+  line-height: 1.4;
+  width: 100%;
+  padding: 5px;
+  border-radius: 4px;
+  background-color: rgba(255, 82, 82, 0.1);
+  border-left: 3px solid #ff5252;
 }
 
 .hint {
   font-size: 12px;
   color: #78cbff;
   margin-left: 10px;
+  animation: fadeInOut 2s infinite;
 }
 
 .text-input-container {
   display: flex;
   margin-bottom: 15px;
+  position: relative;
 }
 
 .text-input-container input {
   flex: 1;
-  padding: 10px;
+  padding: 12px;
   border: none;
   border-radius: 4px 0 0 4px;
   background-color: rgba(255, 255, 255, 0.1);
   color: white;
+  font-size: 14px;
+  transition: all 0.3s ease;
+}
+
+.text-input-container input:focus {
+  outline: none;
+  background-color: rgba(255, 255, 255, 0.15);
+  box-shadow: 0 0 0 2px rgba(0, 123, 255, 0.25);
+}
+
+/* Highlight the input when in fallback mode */
+.error-message + .text-input-container input,
+.error-message ~ .text-input-container input {
+  background-color: rgba(255, 255, 255, 0.15);
+  border: 1px solid rgba(255, 255, 255, 0.3);
 }
 
 .text-input-container button {
-  padding: 10px 15px;
+  padding: 12px 20px;
   border: none;
   border-radius: 0 4px 4px 0;
   background-color: #0d6efd;
   color: white;
   cursor: pointer;
+  transition: background-color 0.2s;
+  font-weight: 500;
 }
 
 .text-input-container button:hover {
   background-color: #0b5ed7;
+}
+
+/* Highlight the button when in fallback mode */
+.error-message + .text-input-container button,
+.error-message ~ .text-input-container button {
+  background-color: #198754;
+}
+
+.error-message + .text-input-container button:hover,
+.error-message ~ .text-input-container button:hover {
+  background-color: #157347;
 }
 
 .text-input-container button:disabled,
@@ -67,24 +108,35 @@
 
 .transcript {
   margin-top: 15px;
-  padding: 10px;
+  padding: 15px;
   background-color: rgba(0, 0, 0, 0.2);
   border-radius: 6px;
-  max-height: 150px;
+  max-height: 200px;
   overflow-y: auto;
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  transition: all 0.3s ease;
+}
+
+.transcript:hover {
+  background-color: rgba(0, 0, 0, 0.25);
 }
 
 .transcript h3 {
   margin-top: 0;
   font-size: 16px;
   color: #78cbff;
-  margin-bottom: 8px;
+  margin-bottom: 10px;
+  border-bottom: 1px solid rgba(120, 203, 255, 0.2);
+  padding-bottom: 5px;
 }
 
 .transcript p {
   margin: 0;
   font-size: 14px;
-  line-height: 1.4;
+  line-height: 1.5;
+  color: rgba(255, 255, 255, 0.9);
+  white-space: pre-wrap;
+  word-break: break-word;
 }
 
 @keyframes pulse {
@@ -96,5 +148,17 @@
   }
   100% {
     opacity: 0.5;
+  }
+}
+
+@keyframes fadeInOut {
+  0% {
+    opacity: 0.7;
+  }
+  50% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0.7;
   }
 } 

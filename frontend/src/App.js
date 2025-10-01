@@ -68,18 +68,53 @@ function App() {
       textSample: audioText ? audioText.substring(0, 50) + '...' : 'No text'
     });
     
-    // Validate data before sending
-    if (!audioText) {
-      console.warn('No text to send');
-      setError('Please provide text before submitting.');
-      setIsProcessing(false);
+    // Allow empty text submissions - don't show an error
+    if (!audioText || audioText.trim() === '') {
+      console.log('No text to send, but proceeding anyway');
+      // Create a default message if no text was provided
+      const defaultText = "No speech input was provided.";
+      
+      try {
+        // Prepare request data with default text
+        const requestData = {
+          text: defaultText
+        };
+        
+        console.log('Sending default text to backend');
+        
+        // Send data to backend with explicit content type
+        const response = await axios.post(`${API_URL}/process/`, requestData, {
+          headers: {
+            'Content-Type': 'application/json'
+          }
+        });
+        
+        console.log('Received response from backend:', response.data);
+        
+        // Update debug info
+        setDebug(prev => ({
+          ...prev,
+          apiResponses: [...prev.apiResponses, {
+            timestamp: new Date().toISOString(),
+            status: response.status,
+            data: response.data
+          }]
+        }));
+        
+        setResult(response.data);
+      } catch (err) {
+        console.error('Error processing data with default text:', err);
+        setError('An error occurred while processing your request');
+      } finally {
+        setIsProcessing(false);
+      }
       return;
     }
     
     try {
       // Prepare request data - only sending text now
       const requestData = {
-        text: audioText || ''  // Ensure text is never undefined
+        text: audioText  // Ensure text is never undefined
       };
       
       console.log('Sending text data to backend:', { 
@@ -152,18 +187,10 @@ function App() {
       console.log('Resetting audio text at start of recording');
       setAudioText('');
     } 
-    // Otherwise, if we got new text and we're recording, update the text
-    else if (text && isRecording) {
-      console.log('Updating audio text during active recording');
+    // Otherwise, if we got new text, update the text regardless of recording state
+    else if (text) {
+      console.log('Updating audio text with new transcript');
       setAudioText(text);
-    } 
-    // We're not recording, but might want to keep accumulating text
-    else if (text && !isRecording) {
-      console.log('Received transcript update while not recording - will still preserve for final submission');
-      setAudioText(text);
-    }
-    else {
-      console.log('Ignoring transcript update while not recording');
     }
   };
 

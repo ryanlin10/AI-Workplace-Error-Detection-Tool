@@ -5,44 +5,60 @@
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
   display: flex;
   flex-direction: column;
-  height: 100vh;
+  min-height: 100vh;
+  height: auto;
+  overflow-x: hidden;
+  overflow-y: visible;
 }
 
 .video-capture {
   position: relative;
-  width: 100%;
-  height: 50vh;
+  width: 85vh;
+  height: 85vh;
+  max-height: 85vh;
+  max-width: 85vh;
   background-color: #000;
   overflow: hidden;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
   border-radius: 8px;
-  margin-bottom: 0;
-}
-
-.video-capture::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  height: 2px;
-  background: linear-gradient(90deg, transparent, rgba(0, 174, 255, 0.5), transparent);
-  animation: scanline 2s linear infinite;
-}
-
-@keyframes scanline {
-  0% { transform: translateY(0); }
-  100% { transform: translateY(300px); }
+  margin-bottom: 20px;
+  min-height: 600px;
+  min-width: 600px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  margin-left: auto;
+  margin-right: auto;
+  padding: 60px 20px 20px 20px;
+  box-sizing: border-box;
 }
 
 .video-capture video {
   width: 100%;
   height: 100%;
   object-fit: cover;
+  max-width: 100%;
+  aspect-ratio: 1/1;
+  border-radius: 4px;
 }
 
 .video-capture video.inactive {
-  display: none;
+  display: block;
+  visibility: hidden;
+  position: absolute;
+}
+
+/* Add a placeholder when video is inactive */
+.video-capture::after {
+  content: '';
+  display: block;
+  width: 100%;
+  height: 100%;
+  background-color: #000;
+  position: absolute;
+  top: 0;
+  left: 0;
+  z-index: -1;
 }
 
 .camera-inactive, .camera-error, .image-saved-indicator {
@@ -52,6 +68,12 @@
   background-color: rgba(0, 0, 0, 0.7);
   border-radius: 8px;
   font-weight: 500;
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 80%;
+  max-width: 400px;
 }
 
 .camera-error {
@@ -61,9 +83,9 @@
 }
 
 .image-saved-indicator {
-  color: #4dff4d;
+  color: #00838f;
   background-color: rgba(0, 0, 0, 0.8);
-  border: 1px solid #4dff4d;
+  border: 1px solid #00838f;
 }
 
 .camera-controls {
@@ -74,6 +96,9 @@
   padding: 0 20px;
   box-sizing: border-box;
   z-index: 10;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
 }
 
 .status-indicator {
@@ -84,6 +109,29 @@
   font-size: 14px;
   display: inline-block;
   backdrop-filter: blur(5px);
+}
+
+.switch-camera-button {
+  background-color: rgba(0, 0, 0, 0.7);
+  border-radius: 20px;
+  padding: 8px 16px;
+  color: white;
+  font-size: 14px;
+  border: none;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  backdrop-filter: blur(5px);
+}
+
+.switch-camera-button:hover {
+  background-color: rgba(0, 0, 0, 0.9);
+  transform: translateY(-2px);
+}
+
+.switch-camera-button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  transform: none;
 }
 
 .checkmark {
@@ -100,32 +148,33 @@
 }
 
 .face-capture-button,
-.medical-capture-button {
-  background-color: rgba(13, 110, 253, 0.9);
+.medical-capture-button,
+.medicine-capture-button {
+  background-color: rgba(0, 123, 255, 0.8);
   color: white;
   border: none;
   border-radius: 30px;
-  padding: 12px 24px;
+  padding: 10px 20px;
+  margin: 0 10px;
   font-size: 16px;
+  font-weight: 500;
   cursor: pointer;
   transition: all 0.2s ease;
   box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  font-weight: 500;
 }
 
 .face-capture-button:hover,
-.medical-capture-button:hover {
+.medical-capture-button:hover,
+.medicine-capture-button:hover {
+  background-color: rgba(0, 123, 255, 1);
   transform: translateY(-2px);
   box-shadow: 0 6px 12px rgba(0, 0, 0, 0.3);
-  background-color: rgba(13, 110, 253, 1);
 }
 
 .face-capture-button:disabled,
-.medical-capture-button:disabled {
-  background-color: rgba(13, 110, 253, 0.4);
+.medical-capture-button:disabled,
+.medicine-capture-button:disabled {
+  background-color: rgba(0, 123, 255, 0.3);
   cursor: not-allowed;
   transform: none;
   box-shadow: none;
@@ -150,6 +199,9 @@
   overflow-y: auto;
   border-top: 1px solid rgba(255, 255, 255, 0.1);
   padding-top: 15px;
+  max-height: none;
+  height: auto;
+  margin-bottom: 30px;
 }
 
 .face-recognition-result, 
@@ -438,11 +490,12 @@
 
 /* Current Complaint Styles */
 .current-complaint {
-  background-color: #f9f9f9;
+  background-color: rgba(30, 60, 90, 0.2);
   border-left: 4px solid #ff9800;
   padding: 15px;
   margin-bottom: 20px;
   border-radius: 4px;
+  color: #e0e0e0;
 }
 
 .complaint-details {
@@ -458,19 +511,20 @@
 .complaint-description p {
   font-size: 16px;
   margin: 0 0 10px 0;
+  color: #e0e0e0;
 }
 
 .complaint-metadata {
   display: flex;
   gap: 20px;
-  color: #666;
+  color: #b0b0b0;
   font-size: 14px;
 }
 
 .associated-symptoms h6 {
   margin: 0 0 5px 0;
   font-size: 14px;
-  color: #555;
+  color: #b0b0b0;
 }
 
 .associated-symptoms ul {
@@ -489,7 +543,7 @@
 }
 
 .diagnosis-alert {
-  background-color: #fff8e1;
+  background-color: rgba(30, 60, 90, 0.2);
   border-radius: 4px;
   padding: 10px 15px;
   margin-bottom: 15px;
@@ -497,7 +551,7 @@
   align-items: center;
   gap: 10px;
   font-size: 14px;
-  color: #795548;
+  color: #e0e0e0;
   border-left: 4px solid #ffb300;
 }
 
@@ -530,15 +584,15 @@
 }
 
 .probability-high {
-  background-color: #ffeaea;
+  background-color: rgba(120, 30, 30, 0.3);
 }
 
 .probability-medium {
-  background-color: #fff8e1;
+  background-color: rgba(90, 70, 20, 0.3);
 }
 
 .probability-low {
-  background-color: #f1f8e9;
+  background-color: rgba(30, 70, 50, 0.3);
 }
 
 td.probability {
@@ -559,15 +613,16 @@ td.probability {
 
 /* Interdisciplinary Considerations Styles */
 .interdisciplinary {
-  background-color: #efebe9;
+  background-color: rgba(30, 60, 90, 0.2);
   border-radius: 4px;
   padding: 15px;
   margin-bottom: 20px;
+  border-left: 4px solid #00838f;
 }
 
 .considerations-intro {
   font-size: 14px;
-  color: #5d4037;
+  color: #e0e0e0;
   margin-bottom: 10px;
   font-style: italic;
 }
@@ -580,7 +635,7 @@ td.probability {
 .considerations-list li {
   margin-bottom: 6px;
   padding: 2px 0;
-  color: #1a1a1a;
+  color: #e0e0e0;
 }
 
 /* Weight Measurement Styles */
@@ -609,15 +664,15 @@ td.probability {
 }
 
 .weight-value.overshot {
-  background-color: #ffecec;
-  color: #d32f2f;
+  background-color: rgba(120, 30, 30, 0.3);
+  color: #ff6b6b;
   border-left: 4px solid #d32f2f;
 }
 
 .weight-value.acceptable {
-  background-color: #eaffee;
-  color: #2e7d32;
-  border-left: 4px solid #2e7d32;
+  background-color: rgba(30, 70, 60, 0.3);
+  color: #4db6ac;
+  border-left: 4px solid #00796b;
 }
 
 .overshot-warning {
@@ -627,7 +682,7 @@ td.probability {
 }
 
 .target-ok {
-  color: #2e7d32;
+  color: #00796b;
 }
 
 .target-info {
@@ -637,12 +692,12 @@ td.probability {
 }
 
 .recommendation {
-  background-color: #fff9e5;
+  background-color: rgba(60, 50, 10, 0.3);
   border-left: 4px solid #ffc107;
   padding: 8px 12px;
   font-size: 14px;
   margin-top: 10px;
-  color: #795548;
+  color: #e0e0e0;
 }
 
 @keyframes warning-pulse {
@@ -678,6 +733,12 @@ td.probability {
   backdrop-filter: blur(5px);
   margin-bottom: 10px;
   font-size: 12px;
+  position: absolute;
+  top: 20px;
+  right: 20px;
+  left: auto;
+  width: auto;
+  z-index: 20;
 }
 
 .ar-patient-info {
@@ -692,6 +753,11 @@ td.probability {
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
   border-left: 4px solid #fff;
   font-size: 14px;
+  position: absolute;
+  top: 20px;
+  left: 20px;
+  margin: 0;
+  z-index: 20;
 }
 
 .ar-patient-name {
@@ -712,6 +778,10 @@ td.probability {
   backdrop-filter: blur(5px);
   align-self: flex-end;
   max-width: 40%;
+  position: absolute;
+  bottom: 20px;
+  right: 20px;
+  z-index: 20;
 }
 
 .medication-summary h4 {
@@ -799,7 +869,24 @@ td.probability {
 /* Add some responsive behavior */
 @media (max-width: 768px) {
   .video-capture {
-    height: 60vh;
+    width: 60vw;
+    height: 60vw;
+    min-height: 300px;
+    min-width: 300px;
+    max-height: none;
+    max-width: 90vw;
+  }
+  
+  .video-capture video {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    aspect-ratio: 1/1;
+  }
+  
+  .video-capture-container {
+    height: auto;
+    overflow-y: auto;
   }
   
   .image-analysis-container {
@@ -809,4 +896,112 @@ td.probability {
   .ar-patient-info {
     max-width: 90%;
   }
+}
+
+.allergy-warning {
+  background-color: #ffebee;
+  border: 2px solid #f44336;
+  border-radius: 8px;
+  padding: 12px;
+  margin: 15px 0;
+  color: #d32f2f;
+  font-weight: bold;
+  animation: warning-pulse 2s infinite;
+}
+
+.allergy-warning p {
+  margin: 0;
+  font-size: 16px;
+  line-height: 1.4;
+}
+
+.medicine-debug-info {
+  margin-top: 15px;
+  border-top: 1px dashed #ccc;
+  padding-top: 10px;
+}
+
+.medicine-debug-info summary {
+  cursor: pointer;
+  color: #666;
+  font-size: 14px;
+  font-weight: 500;
+  margin-bottom: 8px;
+}
+
+.medicine-debug-info summary:hover {
+  color: #333;
+}
+
+.medicine-debug-info .debug-content {
+  background-color: #f5f5f5;
+  border-radius: 4px;
+  padding: 10px;
+  font-family: monospace;
+  font-size: 13px;
+  line-height: 1.4;
+}
+
+.medicine-debug-info .debug-content p {
+  margin: 4px 0;
+}
+
+/* Verification pop-up styles */
+.verification-popup {
+  position: absolute;
+  top: 20px;
+  right: 20px;
+  background: rgba(0, 0, 0, 0.7);
+  padding: 10px 15px;
+  border-radius: 8px;
+  backdrop-filter: blur(5px);
+  z-index: 25;
+  max-width: 250px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+  color: white;
+  font-size: 14px;
+  transition: all 0.3s ease;
+  border-left: 4px solid #0d6efd;
+}
+
+.verification-popup h4 {
+  margin: 0 0 5px 0;
+  font-size: 16px;
+  color: #78cbff;
+}
+
+.verification-popup.success {
+  border-left: 4px solid #00796b;
+}
+
+.verification-popup.error {
+  border-left: 4px solid #d32f2f;
+}
+
+.verification-popup.warning {
+  border-left: 4px solid #ffc107;
+}
+
+.verification-popup .result-text {
+  margin: 5px 0;
+  font-weight: bold;
+}
+
+.verification-popup .result-text.success {
+  color: #4db6ac;
+}
+
+.verification-popup .result-text.error {
+  color: #ff6b6b;
+  animation: warning-pulse 1.5s infinite;
+}
+
+.verification-popup .result-text.warning {
+  color: #ffc107;
+}
+
+.verification-popup .details {
+  font-size: 12px;
+  margin-top: 5px;
+  color: #e0e0e0;
 } 

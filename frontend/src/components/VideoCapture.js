@@ -20,6 +20,7 @@ const VideoCapture = ({ isActive, onImageCapture }) => {
   const [imageAnalysisError, setImageAnalysisError] = useState(null);
   const [patientData, setPatientData] = useState(null);
   const [textInput, setTextInput] = useState("");
+  const [currentCameraIndex, setCurrentCameraIndex] = useState(1); // Start with camera 1
   const [medicationSummary, setMedicationSummary] = useState({
     painkillers: 2,
     antibiotics: 1,
@@ -30,8 +31,13 @@ const VideoCapture = ({ isActive, onImageCapture }) => {
   // Audio input status
   const [audioStatus, setAudioStatus] = useState("Audio recognition not available. Please use manual input.");
   
+  // Medicine verification state
+  const [medicineVerificationLoading, setMedicineVerificationLoading] = useState(false);
+  const [medicineVerificationResult, setMedicineVerificationResult] = useState(null);
+  const [correctMedicine, setCorrectMedicine] = useState('B'); // The medicine that should be used
+  
   // Function to check if an image is blank/black
-  const isImageBlank = (imageData) => {
+  const isImageBlank = useCallback((imageData) => {
     // Create a temporary canvas to analyze the image
     const tempCanvas = document.createElement('canvas');
     const tempCtx = tempCanvas.getContext('2d');
@@ -74,7 +80,206 @@ const VideoCapture = ({ isActive, onImageCapture }) => {
       
       img.src = imageData;
     });
-  };
+  }, []);
+  
+  // Clean up camera resources
+  const cleanupCamera = useCallback(() => {
+    if (streamRef.current) {
+      try {
+        streamRef.current.getTracks().forEach(track => {
+          track.stop();
+        });
+        streamRef.current = null;
+        console.log('Camera stream tracks stopped');
+      } catch (error) {
+        console.error('Error stopping camera stream:', error);
+      }
+    }
+  }, []);
+  
+  // Initialize camera when component becomes active
+  useEffect(() => {
+    if (isActive) {
+      console.log('VideoCapture: Initializing camera');
+      setIsCameraReady(false);
+      setCameraError(false);
+      setHasValidImage(false);
+      setCameraStatus('Initializing camera...');
+      
+      // Define video-only constraints to avoid conflicts with audio
+      const videoConstraints = {
+        video: {
+          width: { ideal: 1280 },
+          height: { ideal: 720 },
+          deviceId: { exact: 1 }  // Use camera with index 1 instead of default camera
+        },
+        audio: false // Explicitly disable audio to avoid conflicts
+      };
+      
+      // Clean up any existing camera stream first
+      cleanupCamera();
+      
+      // Request camera access with a delay to avoid conflicts with audio
+      setTimeout(() => {
+        // First try to get a list of all available video devices
+        navigator.mediaDevices.enumerateDevices()
+          .then(devices => {
+            // Filter for video input devices (cameras)
+            const videoDevices = devices.filter(device => device.kind === 'videoinput');
+            console.log('Available video devices:', videoDevices.map((device, index) => 
+              `Camera ${index}: ${device.label || 'unnamed camera'} (${device.deviceId.substring(0, 8)}...)`
+            ));
+            
+            // Check if the requested camera index is available
+            if (videoDevices.length > currentCameraIndex) {
+              console.log(`Using camera ${currentCameraIndex}:`, videoDevices[currentCameraIndex].label || 'unnamed camera');
+              const videoConstraints = {
+                video: {
+                  width: { ideal: 1280 },
+                  height: { ideal: 720 },
+                  deviceId: { exact: videoDevices[currentCameraIndex].deviceId }
+                },
+                audio: false
+              };
+              
+              return navigator.mediaDevices.getUserMedia(videoConstraints);
+            } 
+            // Otherwise, fall back to the default camera
+            else {
+              console.log(`Camera ${currentCameraIndex} not available, falling back to default camera`);
+              return navigator.mediaDevices.getUserMedia({
+                video: {
+                  width: { ideal: 1280 },
+                  height: { ideal: 720 }
+                },
+                audio: false
+              });
+            }
+          })
+          .then(stream => {
+            console.log('Camera access granted');
+            streamRef.current = stream;
+            
+            if (videoRef.current) {
+              videoRef.current.srcObject = stream;
+              videoRef.current.onloadedmetadata = () => {
+                setIsCameraReady(true);
+                setCameraStatus('Camera ready');
+                console.log('Camera ready');
+              };
+            }
+          })
+          .catch(error => {
+            console.error('Error accessing camera:', error);
+            setCameraError(true);
+            setCameraStatus(`Camera error: ${error.message}`);
+          });
+      }, 500); // Add delay before initializing camera
+      
+      return () => {
+        cleanupCamera();
+      };
+    } else {
+      // Component is inactive, clean up camera resources
+      cleanupCamera();
+      setIsCameraReady(false);
+    }
+  }, [isActive, cleanupCamera, currentCameraIndex]);
+  
+  // Function to process face recognition
+  const processFaceRecognition = useCallback(async (imageData) => {
+    try {
+      setFaceRecognitionLoading(true);
+      setFaceRecognitionResult(null);
+      
+      console.log('Sending image for face recognition...');
+      const response = await axios.post('http://localhost:8080/api/recognize-face', {
+        image: imageData
+      });
+      
+      console.log('Face recognition result:', response.data);
+      setFaceRecognitionResult(response.data);
+      
+      // Store patient data if available
+      if (response.data.patient_data) {
+        setPatientData(response.data.patient_data);
+      }
+      
+    } catch (error) {
+      console.error('Error in face recognition:', error);
+      setFaceRecognitionResult({
+        error: true,
+        message: error.response?.data?.error || 'Failed to process face recognition'
+      });
+    } finally {
+      setFaceRecognitionLoading(false);
+    }
+  }, []);
+  
+  // Function to process medical image analysis
+  const processMedicalImageAnalysis = useCallback(async (imageData) => {
+    try {
+      setImageAnalysisLoading(true);
+      setImageAnalysisResult(null);
+      
+      console.log('Sending image for medical analysis...');
+      const response = await axios.post('http://localhost:8080/api/analyze-image', {
+        image: imageData
+      });
+      
+      console.log('Medical image analysis result:', response.data);
+      setImageAnalysisResult(response.data);
+      
+    } catch (error) {
+      console.error('Error in medical image analysis:', error);
+      setImageAnalysisResult({
+        success: false,
+        error: error.response?.data?.error || 'Error processing image analysis'
+      });
+    } finally {
+      setImageAnalysisLoading(false);
+    }
+  }, []);
+  
+  // Function to process medicine verification
+  const processMedicineVerification = useCallback(async (imageData) => {
+    try {
+      setMedicineVerificationLoading(true);
+      setMedicineVerificationResult(null);
+      
+      console.log('Sending image for medicine verification...');
+      
+      // Get the current patient ID from the face recognition result or use a default
+      const currentPatientId = patientData?.patient_id || (faceRecognitionResult?.person_id || null);
+      console.log(`Current patient ID for medicine verification: ${currentPatientId || 'None'}`);
+      
+      // Call the backend API for medicine verification
+      const response = await axios.post('http://localhost:8080/api/verify-medicine', {
+        image: imageData,
+        patientId: currentPatientId
+      });
+      
+      console.log('Medicine verification result:', response.data);
+      
+      // Add timestamp to the result for debugging
+      const resultWithTimestamp = {
+        ...response.data,
+        timestamp: new Date().toISOString()
+      };
+      
+      setMedicineVerificationResult(resultWithTimestamp);
+      
+    } catch (error) {
+      console.error('Error in medicine verification:', error);
+      setMedicineVerificationResult({
+        success: false,
+        error: error.response?.data?.error || 'Error processing medicine verification',
+        timestamp: new Date().toISOString()
+      });
+    } finally {
+      setMedicineVerificationLoading(false);
+    }
+  }, [patientData, faceRecognitionResult]);
   
   // Function to capture image from video
   const captureImage = useCallback(async (mode) => {
@@ -106,13 +311,21 @@ const VideoCapture = ({ isActive, onImageCapture }) => {
         await new Promise(resolve => setTimeout(resolve, 1000));
       }
       
-      // Ensure canvas dimensions match video
-      canvasRef.current.width = videoRef.current.videoWidth || 640;
-      canvasRef.current.height = videoRef.current.videoHeight || 480;
+      // Ensure canvas dimensions match video's actual dimensions
+      const videoWidth = videoRef.current.videoWidth || 720;
+      const videoHeight = videoRef.current.videoHeight || 1280;
+      
+      canvasRef.current.width = videoWidth;
+      canvasRef.current.height = videoHeight;
       
       // Draw the current video frame to canvas
       const ctx = canvasRef.current.getContext('2d');
-      ctx.drawImage(videoRef.current, 0, 0, canvasRef.current.width, canvasRef.current.height);
+      
+      // Clear the canvas first
+      ctx.clearRect(0, 0, canvasRef.current.width, canvasRef.current.height);
+      
+      // Draw the video frame maintaining aspect ratio
+      ctx.drawImage(videoRef.current, 0, 0, videoWidth, videoHeight);
       
       // Convert to data URL with higher quality
       const imageDataUrl = canvasRef.current.toDataURL('image/jpeg', 0.95);
@@ -139,6 +352,8 @@ const VideoCapture = ({ isActive, onImageCapture }) => {
         await processFaceRecognition(imageDataUrl);
       } else if (mode === 'medical') {
         await processMedicalImageAnalysis(imageDataUrl);
+      } else if (mode === 'medicine') {
+        await processMedicineVerification(imageDataUrl);
       }
       
       return true;
@@ -146,62 +361,7 @@ const VideoCapture = ({ isActive, onImageCapture }) => {
       console.error(`Error capturing ${mode} image:`, error);
       return false;
     }
-  }, [onImageCapture, isCameraReady]);
-  
-  // Function to process face recognition
-  const processFaceRecognition = async (imageData) => {
-    try {
-      setFaceRecognitionLoading(true);
-      setFaceRecognitionResult(null);
-      
-      console.log('Sending image for face recognition...');
-      const response = await axios.post('http://localhost:8080/api/recognize-face', {
-        image: imageData
-      });
-      
-      console.log('Face recognition result:', response.data);
-      setFaceRecognitionResult(response.data);
-      
-      // Store patient data if available
-      if (response.data.patient_data) {
-        setPatientData(response.data.patient_data);
-      }
-      
-    } catch (error) {
-      console.error('Error in face recognition:', error);
-      setFaceRecognitionResult({
-        success: false,
-        error: error.response?.data?.error || 'Error processing face recognition'
-      });
-    } finally {
-      setFaceRecognitionLoading(false);
-    }
-  };
-  
-  // Function to process medical image analysis
-  const processMedicalImageAnalysis = async (imageData) => {
-    try {
-      setImageAnalysisLoading(true);
-      setImageAnalysisResult(null);
-      
-      console.log('Sending image for medical analysis...');
-      const response = await axios.post('http://localhost:8080/api/analyze-image', {
-        image: imageData
-      });
-      
-      console.log('Medical image analysis result:', response.data);
-      setImageAnalysisResult(response.data);
-      
-    } catch (error) {
-      console.error('Error in medical image analysis:', error);
-      setImageAnalysisResult({
-        success: false,
-        error: error.response?.data?.error || 'Error processing image analysis'
-      });
-    } finally {
-      setImageAnalysisLoading(false);
-    }
-  };
+  }, [onImageCapture, isCameraReady, isImageBlank, processFaceRecognition, processMedicalImageAnalysis, processMedicineVerification]);
   
   // Face capture button handler
   const handleFaceCapture = async () => {
@@ -245,6 +405,27 @@ const VideoCapture = ({ isActive, onImageCapture }) => {
     }
   };
   
+  // Medicine verification button handler
+  const handleMedicineCapture = async () => {
+    if (isCameraReady) {
+      console.log('Manual medicine verification triggered');
+      setCameraStatus('Verifying medicine...');
+      
+      const success = await captureImage('medicine');
+      
+      if (success) {
+        setCameraStatus('Medicine image captured successfully!');
+      } else {
+        setCameraStatus('Failed to capture medicine image. Try again.');
+      }
+      
+      // Reset status after a delay
+      setTimeout(() => {
+        setCameraStatus(isCameraReady ? 'Camera active' : 'Initializing camera...');
+      }, 3000);
+    }
+  };
+  
   // When stream ends, ensure the parent has the latest image
   useEffect(() => {
     if (!isActive && storedImage) {
@@ -252,101 +433,6 @@ const VideoCapture = ({ isActive, onImageCapture }) => {
       onImageCapture(storedImage);
     }
   }, [isActive, storedImage, onImageCapture]);
-  
-  // Handle camera setup and teardown
-  useEffect(() => {
-    if (isActive && !cameraError) {
-      console.log('Starting camera');
-      setCameraStatus('Initializing camera...');
-      
-      // Reset hasValidImage but keep any stored image
-      if (!storedImage) {
-        setHasValidImage(false);
-      }
-      
-      // Only initialize the camera if it's not already ready
-      if (!isCameraReady || !streamRef.current) {
-        // Start camera with specific constraints for better quality
-        navigator.mediaDevices.getUserMedia({ 
-          video: { 
-            width: { ideal: 1280 },
-            height: { ideal: 720 },
-            facingMode: 'user'
-          } 
-        })
-          .then(stream => {
-            console.log('Camera access granted');
-            streamRef.current = stream;
-            
-            if (videoRef.current) {
-              // Set srcObject to the stream
-              videoRef.current.srcObject = stream;
-              
-              // Listen for loadedmetadata event
-              videoRef.current.onloadedmetadata = () => {
-                console.log('Video metadata loaded');
-                
-                // Play the video
-                videoRef.current.play()
-                  .then(() => {
-                    console.log('Video playback started');
-                    setCameraStatus('Camera active - Use the capture buttons below');
-                    
-                    // Wait a moment to ensure video is actually rendering frames
-                    setTimeout(() => {
-                      setIsCameraReady(true);
-                    }, 1000);
-                  })
-                  .catch(error => {
-                    console.error('Error starting video playback:', error);
-                    setCameraError(true);
-                    setCameraStatus('Camera error: ' + error.message);
-                  });
-              };
-              
-              // Listen for errors
-              videoRef.current.onerror = (error) => {
-                console.error('Video element error:', error);
-                setCameraError(true);
-                setCameraStatus('Video error: ' + (error.message || 'Unknown error'));
-              };
-            }
-          })
-          .catch(error => {
-            console.error('Error accessing camera:', error);
-            setCameraError(true);
-            setCameraStatus('Camera access error: ' + error.message);
-          });
-      } else {
-        // Camera is already initialized, just update the status
-        setCameraStatus('Camera active - Use the capture buttons below');
-      }
-    } else if (!isActive) {
-      // Stop camera when stream ends
-      if (streamRef.current) {
-        console.log('Stopping camera');
-        setCameraStatus('Stopping camera...');
-        
-        // Stop all tracks
-        streamRef.current.getTracks().forEach(track => {
-          track.stop();
-          console.log(`Track ${track.kind} stopped`);
-        });
-        streamRef.current = null;
-        setIsCameraReady(false);
-        setCameraStatus('Camera stopped');
-      }
-    }
-    
-    return () => {
-      // Only stop the camera in the cleanup function if isActive is false
-      // This prevents stopping the camera when the component re-renders
-      if (!isActive && streamRef.current) {
-        console.log('Cleanup: stopping camera tracks');
-        streamRef.current.getTracks().forEach(track => track.stop());
-      }
-    };
-  }, [isActive, cameraError, storedImage]); // Remove captureMode from dependencies
   
   // Render face recognition result
   const renderFaceRecognition = () => {
@@ -401,35 +487,29 @@ const VideoCapture = ({ isActive, onImageCapture }) => {
     }
     
     if (imageAnalysisResult && imageAnalysisResult.success) {
+      const popupClass = imageAnalysisResult.hasOvershot 
+        ? 'verification-popup warning' 
+        : 'verification-popup success';
+        
       return (
-        <div className="image-analysis-result">
-          <h4>Scale Measurement Analysis:</h4>
-          <div className="analysis-text">{imageAnalysisResult.analysis}</div>
+        <div className={popupClass}>
+          <h4>Scale Weight</h4>
           
-          {imageAnalysisResult.weight && (
-            <div className="weight-measurement">
-              <h5>Detected Weight:</h5>
-              <div className={`weight-value ${imageAnalysisResult.hasOvershot ? 'overshot' : 'acceptable'}`}>
-                {imageAnalysisResult.weight} {imageAnalysisResult.unit}
-                {imageAnalysisResult.hasOvershot ? 
-                  <span className="overshot-warning"> ⚠️ EXCEEDS TARGET!</span> : 
-                  <span className="target-ok"> ✓ Within target</span>
-                }
-              </div>
-              <div className="target-info">
-                Target: {imageAnalysisResult.targetWeight}g
-              </div>
-              {imageAnalysisResult.hasOvershot && (
-                <div className="recommendation">
-                  Recommendation: Reduce the amount to match the target weight of {imageAnalysisResult.targetWeight}g.
-                </div>
-              )}
-            </div>
-          )}
+          <div className={`result-text ${imageAnalysisResult.hasOvershot ? 'warning' : 'success'}`}>
+            {imageAnalysisResult.weight} {imageAnalysisResult.unit}
+            {imageAnalysisResult.hasOvershot ? 
+              ' ⚠️ EXCEEDS TARGET!' : 
+              ' ✓ Within target'
+            }
+          </div>
           
-          {imageAnalysisResult.is_fallback && (
-            <div className="fallback-notice">
-              Note: Using simulated analysis (API issue)
+          <div className="details">
+            Target: {imageAnalysisResult.targetWeight}g
+          </div>
+          
+          {imageAnalysisResult.hasOvershot && (
+            <div className="details">
+              Reduce to match target of {imageAnalysisResult.targetWeight}g.
             </div>
           )}
         </div>
@@ -438,8 +518,70 @@ const VideoCapture = ({ isActive, onImageCapture }) => {
     
     if (imageAnalysisResult && !imageAnalysisResult.success) {
       return (
-        <div className="image-analysis-error">
-          <p>Error analyzing image: {imageAnalysisResult.error}</p>
+        <div className="verification-popup error">
+          <h4>Scale Weight</h4>
+          <div className="result-text error">
+            Error: {imageAnalysisResult.error || 'Failed to analyze scale'}
+          </div>
+        </div>
+      );
+    }
+    
+    return null;
+  };
+  
+  // Function to render medicine verification results
+  const renderMedicineVerification = () => {
+    if (medicineVerificationLoading) {
+      return (
+        <div className="analysis-loading">
+          <p>Analyzing medicine image...</p>
+        </div>
+      );
+    }
+    
+    if (medicineVerificationResult && medicineVerificationResult.success) {
+      const popupClass = !medicineVerificationResult.isCorrectMedicine || medicineVerificationResult.allergyWarning 
+        ? 'verification-popup error' 
+        : 'verification-popup success';
+        
+      return (
+        <div className={popupClass}>
+          <h4>Medicine Verification</h4>
+          
+          <div className={`result-text ${!medicineVerificationResult.isCorrectMedicine || medicineVerificationResult.allergyWarning ? 'error' : 'success'}`}>
+            {medicineVerificationResult.detectedMedicine} 
+            {!medicineVerificationResult.isCorrectMedicine ? 
+              ' ⚠️ INCORRECT MEDICINE!' : 
+              medicineVerificationResult.allergyWarning ?
+              ' ⚠️ ALLERGIC REACTION RISK!' :
+              ' ✓ Correct medicine'
+            }
+          </div>
+          
+          <div className="details">
+            Required: {medicineVerificationResult.correctMedicine}
+          </div>
+          
+          {(!medicineVerificationResult.isCorrectMedicine || medicineVerificationResult.allergyWarning) && (
+            <div className="details">
+              {medicineVerificationResult.allergyWarning ? 
+                `DO NOT administer. Use ${medicineVerificationResult.correctMedicine} instead.` :
+                `Please use ${medicineVerificationResult.correctMedicine} as prescribed.`
+              }
+            </div>
+          )}
+        </div>
+      );
+    }
+    
+    if (medicineVerificationResult && !medicineVerificationResult.success) {
+      return (
+        <div className="verification-popup error">
+          <h4>Medicine Verification</h4>
+          <div className="result-text error">
+            Error: {medicineVerificationResult.error || 'Failed to verify medicine'}
+          </div>
         </div>
       );
     }
@@ -636,6 +778,7 @@ const VideoCapture = ({ isActive, onImageCapture }) => {
           </div>
         </div>
         
+        {/* Patient info box positioned at top left */}
         <div className="ar-patient-info">
           <div className="ar-patient-name">{patientData.full_name}</div>
           <div className="ar-patient-details">
@@ -700,18 +843,83 @@ const VideoCapture = ({ isActive, onImageCapture }) => {
     setTextInput("");
   };
   
+  // Function to switch to the next available camera
+  const switchCamera = useCallback(() => {
+    // First clean up the current camera
+    cleanupCamera();
+    
+    // Get available cameras and switch to the next one
+    navigator.mediaDevices.enumerateDevices()
+      .then(devices => {
+        const videoDevices = devices.filter(device => device.kind === 'videoinput');
+        
+        console.log('Available video devices for switching:', videoDevices.map((device, index) => 
+          `Camera ${index}: ${device.label || 'unnamed camera'} (${device.deviceId.substring(0, 8)}...)`
+        ));
+        
+        if (videoDevices.length > 1) {
+          // Calculate the next camera index (cycle through available cameras)
+          const nextCameraIndex = (currentCameraIndex + 1) % videoDevices.length;
+          console.log(`Switching from camera ${currentCameraIndex} to camera ${nextCameraIndex}`);
+          setCurrentCameraIndex(nextCameraIndex);
+          setCameraStatus(`Switching to camera ${nextCameraIndex}...`);
+          
+          // The useEffect with currentCameraIndex dependency will handle the actual camera initialization
+        } else {
+          console.log('Only one camera available, cannot switch');
+          setCameraStatus('Only one camera available');
+          
+          // Re-initialize the same camera since we cleaned it up
+          setTimeout(() => {
+            navigator.mediaDevices.getUserMedia({
+              video: {
+                width: { ideal: 1280 },
+                height: { ideal: 720 }
+              },
+              audio: false
+            })
+            .then(stream => {
+              console.log('Camera re-initialized');
+              streamRef.current = stream;
+              
+              if (videoRef.current) {
+                videoRef.current.srcObject = stream;
+                videoRef.current.onloadedmetadata = () => {
+                  setIsCameraReady(true);
+                  setCameraStatus('Camera ready');
+                };
+              }
+            })
+            .catch(error => {
+              console.error('Error re-initializing camera:', error);
+              setCameraError(true);
+              setCameraStatus(`Camera error: ${error.message}`);
+            });
+          }, 500);
+        }
+      })
+      .catch(error => {
+        console.error('Error enumerating devices:', error);
+        setCameraStatus('Error switching camera');
+      });
+  }, [cleanupCamera, currentCameraIndex]);
+  
   return (
     <div className="video-capture-container">
       <div className="video-capture">
         <video 
-          ref={videoRef} 
-          className={isActive ? 'active' : 'inactive'} 
-          muted
-          playsInline
+          ref={videoRef}
           autoPlay
+          playsInline
+          muted
+          className={isActive ? 'active' : 'inactive'}
         />
         
         {renderAROverlay()}
+        
+        {/* Place medicine verification and scale weight pop-ups here */}
+        {renderMedicineVerification()}
+        {renderImageAnalysis()}
         
         {isActive && (
           <div className="camera-controls">
@@ -719,6 +927,15 @@ const VideoCapture = ({ isActive, onImageCapture }) => {
               {cameraStatus}
               {hasValidImage && <span className="checkmark">✓</span>}
             </div>
+            
+            <button 
+              className="switch-camera-button"
+              onClick={switchCamera}
+              disabled={!isCameraReady}
+              title="Switch to next available camera"
+            >
+              🔄 Switch Camera
+            </button>
           </div>
         )}
         
@@ -757,12 +974,18 @@ const VideoCapture = ({ isActive, onImageCapture }) => {
           >
             🩺 Capture Scale Weight
           </button>
+          <button 
+            className="medicine-capture-button"
+            onClick={handleMedicineCapture}
+            disabled={!isCameraReady || medicineVerificationLoading}
+          >
+            💊 Verify Medicine
+          </button>
         </div>
       )}
       
       <div className="image-analysis-container">
         {renderFaceRecognition()}
-        {renderImageAnalysis()}
         {renderPatientMedicalHistory()}
       </div>
     </div>

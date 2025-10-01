@@ -1,6 +1,6 @@
-# BuildX2 – Augmented Reality Medical Assistant
+# AI + Augmented Reality Medical Assistant
 
-An end-to-end demo application combining a React frontend with a Node/Express backend to assist manufacturing/medical workflows. The app captures audio and video through a browser, sends data to the backend, and uses Claude (Anthropic) for:
+An end-to-end demo application combining a React frontend with a Node/Express backend to assist manufacturing/medical workflows. The app captures audio and video through a browser (can be configured to receive data from Ray-Ban Meta through OBS), sends data to the backend, and uses Claude (Anthropic) for:
 - Face identification (with optional reference image comparison) and showing patient history
 - Reading scale measurements from an image and checking against a target
 - Verifying a medicine label/image against expected options

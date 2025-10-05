@@ -1,15 +1,15 @@
 # AI + Augmented Reality Medical Assistant
 
+Detects and notifies the user of workplace errors in real time. Reached the finals of the Oxford BuildX 2025 Hackathon.
+
+Demo video:
+https://youtu.be/1ElvHgubaOg
+
 An end-to-end demo application combining a React frontend with a Node/Express backend to assist manufacturing/medical workflows. The app captures audio and video through a browser (can be configured to receive data from Ray-Ban Meta through OBS), sends data to the backend, and uses Claude (Anthropic) for:
 - Face identification (with optional reference image comparison) and showing patient history
 - Reading scale measurements from an image and checking against a target
 - Verifying a medicine label/image against expected options
 - Extracting numerical medical information from a transcript and formatting it into a concise medical log
-
-Reached the finals of the Oxford BuildX 2025 Hackathon.
-
-Demo video:
-https://youtu.be/1ElvHgubaOg
 
 
 ## Project Structure

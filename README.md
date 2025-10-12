@@ -1,6 +1,6 @@
 # AI + Augmented Reality Medical Assistant
 
-Detects and notifies the user of workplace errors in real time. Reached the finals of the Oxford BuildX 2025 Hackathon.
+Detects and notifies a user of workplace errors in real time. Reached the finals of the Oxford BuildX 2025 Hackathon.
 
 Demo video:
 https://youtu.be/1ElvHgubaOg
